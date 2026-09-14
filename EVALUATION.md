@@ -74,8 +74,8 @@ framework, manual parsing, a named design pattern or a higher test count. Record
 concrete examples of complexity and tradeoffs. Comparable behavior is necessary
 before interpreting lower line counts as an improvement.
 
-Language choice is free and receives no bonus or penalty. Assess its consequences
-through the result. Cross-language line counts are not directly equivalent.
+Rust is required for the application. Supporting UI technologies and libraries
+are free choices; assess their consequences through the result.
 Use the same host, workload, startup definition and sampling method for resource
 comparisons. Repeat local mock workloads to distinguish application overhead
 from network/provider latency. Include browser/helper processes and runtimes;

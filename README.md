@@ -83,13 +83,15 @@ changed inputs; they are not access control or application acceptance tests.
 ## Self-service instruction for any agent
 
 For agents that set up their own workspace, send the text in
-[AGENT_PROMPT.txt](AGENT_PROMPT.txt) unchanged plus one line naming the
-candidate, for example `candidate: deepseek`. The name must come from the
-operator: an agent behind a browser-chat bridge cannot reliably tell which model
-it is (on 2026-09-14 a deepseek session named itself claude). The agent then
-creates a fresh directory, downloads and verifies the start package, fetches
-only its own plan from `results/<name>` if one exists, plans first if none
-exists, and then builds. Without a candidate line it stops and asks.
+[AGENT_PROMPT.txt](AGENT_PROMPT.txt) unchanged, optionally plus one line naming
+the candidate, for example `candidate: deepseek`. Without that line the agent
+takes the name from the identity line the WebAgent bridge puts in front of every
+browser turn (`[Identitaet] Du bist das Modell hinter dem WebAgent-Brain
+"<name>"`). It never uses its own belief about which model it is: on 2026-09-14,
+before the bridge sent that line, a deepseek session named itself claude. The
+agent then creates a fresh directory, downloads and verifies the start package,
+fetches only its own plan from `results/<name>` if one exists, plans first if
+none exists, and then builds. With neither source it stops and asks.
 
 With Pi, for example:
 

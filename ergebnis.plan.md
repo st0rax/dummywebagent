@@ -79,7 +79,7 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
 | chatgpt | ja, 2.063 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | Durchgang 1: dreimal Composer-Timeout. Durchgang 2: zwei Timeouts, dritter interner Versuch erfolgreich, 275 s; Eingabe vollständig belegt; `results/chatgpt` |
 | gemini | ja, 106 Zeilen | Direktweg, ohne Pi-Systemprompt | Über Pi zweimal früh gekürzte Eingabe mit Rückfrage (siehe 2a). Direktweg: 26 s, Planauftrag angekommen, **Ende der Anweisung durch Eingabegrenze abgeschnitten** (siehe 2b, 2c); `results/gemini` |
 | kimi | nein | Pi; dann Direktweg | Pi-Weg: Composer-Timeout in allen Versuchen beider Durchgänge. Direktweg bei 32.134 Zeichen: ebenfalls Composer-Timeout nach 23 s — das Problem hängt nicht an der Eingabegröße |
-| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; danach liefen **zwei** verwaiste Pi-Turns (je 52.287 Zeichen) bis 10:44:08 und 10:58:35, beide ohne Antwort. Erster Direktweg nicht gemessen — die Anfrage wartete hinter diesen Turns und lief ab, bevor sie den Browser erreichte (T-946). Nach Neustart der Bridge zweiter Direktweg 11:14: 32.134 Zeichen, nach 856 s ebenfalls `timeout_no_message` ohne Antwort |
+| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; danach liefen **zwei** verwaiste Pi-Turns (je 52.287 Zeichen) bis 10:44:08 und 10:58:35, beide ohne Antwort. Erster Direktweg nicht gemessen — die Anfrage wartete hinter diesen Turns und lief ab, bevor sie den Browser erreichte (T-946). Nach Neustart der Bridge zweiter Direktweg 11:14: 32.134 Zeichen, nach 856 s ebenfalls `timeout_no_message` ohne Antwort; Kontrolle mit 77 Zeichen ebenso. **Ursache per Screenshot: abgemeldet, Zustimmungsdialog zu den Nutzungsbedingungen verdeckt den Composer; braucht den Menschen** |
 | claude | nein | Pi | `session_state=Unbestimmt` in allen vier Versuchen; Seite stand auf Reauth-Login, braucht Anmeldung durch den Menschen im WebView-Fenster |
 | zai | nein | Pi | Sperrbanner erkannt (`blocked`), deterministische Sperre 21.600 s |
 
@@ -89,9 +89,11 @@ Bridge. Beim Pi-Weg steht `prompt.txt` hinter `SPEC.md`: qwen und chatgpt nennen
 Spec; ihre Eingabe kam bis zum Schluss an. Bei gemini ist per Messung belegt,
 dass die letzten rund 50 bis 230 Zeichen fehlten.
 
-Vier Kandidaten haben geliefert. Die Ausfälle haben vier verschiedene Ursachen:
-kimi scheitert am Befüllen des Composers unabhängig von der Größe, mistral nach
-dem Absenden, zai an einem Sperrbanner, claude an einer abgelaufenen Anmeldung.
+Vier Kandidaten haben geliefert. Die Ausfälle haben drei verschiedene Ursachen:
+kimi scheitert am Befüllen des Composers unabhängig von der Größe, zai an einem
+Sperrbanner, claude und mistral an einer fehlenden Anmeldung — bei mistral
+zusätzlich hinter einem Zustimmungsdialog zu den Nutzungsbedingungen, den die
+Bridge nicht erkennt und den sie sechsmal als erfolgreiches Senden meldete.
 chatgpt zeigt außerdem, dass derselbe Anbieter bei derselben Eingabe mal
 scheitert und mal besteht.
 
@@ -347,6 +349,10 @@ wäre stärker als jeder der vier.
 - **zai:** kein Plan. Deterministische Sperre nach erkanntem Sperrbanner.
 
 Die technischen Befunde aus diesen Läufen stehen im Taskboard von
-`webagent-rs` als T-936 bis T-947. T-947 stammt aus den mistral-Läufen: jede
-der fünf Anfragen lief dreimal das Turn-Budget von 270 s, weil der Relay nach
-einem stummen Turn den kompletten Prompt in einem neuen Chat erneut sendet.
+`webagent-rs` als T-936 bis T-949. Aus den mistral-Läufen stammen drei:
+T-947, weil jede Anfrage dreimal das Turn-Budget lief und der Relay nach einem
+stummen Turn den kompletten Prompt in einem neuen Chat erneut sendet; T-948,
+weil eine abgemeldete Seite mit Zustimmungsdialog als erfolgreiches Senden
+gilt; T-949, weil die mistral-Selektoren in offenen Dialogen Knöpfe mit
+„Continue" oder „OK" automatisch klicken und damit einen englischsprachigen
+Zustimmungsdialog bestätigen könnten.

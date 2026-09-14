@@ -11,7 +11,12 @@ structure, algorithms, build order and visual design belong to the implementing 
 
 ## Start a candidate
 
-Use Python 3.10+ to create a new, otherwise empty candidate directory:
+Download the [Rust agent start package v2.2](webagent-agent-start-v2.2.zip?raw=true)
+and extract it into a fresh candidate directory. It contains only `SPEC.md` and
+`prompt.txt`, with no repository history or operator tooling. Use those two files
+as the agent's input, not this repository's checkout.
+
+Alternatively, use Python 3.10+ to create a new candidate directory:
 
 ```sh
 python prepare.py ../candidate-a

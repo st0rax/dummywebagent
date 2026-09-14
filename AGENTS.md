@@ -36,3 +36,10 @@ self-contained and free of implementation references or solution instructions.
 If either input changes, update the packaged copies and their revision together.
 README, this entry file, preparation tooling and EVALUATION.md are operator-side
 material; they are not additional candidate inputs or product requirements.
+
+Candidate output — plans, implementations, reports, evidence — belongs on a
+`results/<candidate>` branch and never on `main`. `main` must stay a valid
+candidate input on its own, because an agent with network access can clone this
+repository regardless of the directory it was given. A result left on `main`
+contaminates every later candidate quietly, and a contaminated candidate looks
+like an unusually strong one from the outside.

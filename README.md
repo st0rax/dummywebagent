@@ -117,6 +117,23 @@ This repository does not contain an independent executable acceptance suite.
 Candidate-authored passing tests are claims to inspect and rerun, not independent
 certification. Live provider evidence is separate from offline acceptance.
 
+## Store results off the assignment branch
+
+Keep every candidate output — plans, implementations, reports, evidence — on a
+`results/<candidate>` branch. `main` carries the assignment only.
+
+This matters because directory isolation is not the whole boundary. An agent
+with network access can clone this public repository no matter which directory
+you handed it, and one already has. Anything left on `main` therefore reaches
+later candidates, who are told in `prompt.txt` not to consult another
+candidate's solution. The failure is quiet: a contaminated candidate looks like
+an unusually strong one.
+
+Record which branches existed when each candidate ran, alongside the input
+hashes. After a run, the candidate's own transcript shows whether it cloned this
+repository or read another candidate's files — that is detection, not
+prevention, but it is checkable evidence.
+
 ## Assignment revision
 
 Revision 2.2 is an outcome-based Rust assignment. It contains no source references,

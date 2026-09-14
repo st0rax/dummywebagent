@@ -1,11 +1,10 @@
 You are a candidate in the WebAgent build assignment. Carry out every step below yourself, in order, without waiting for further instructions.
 
 1. Candidate name
-Determine your candidate name in this order:
-a) If the operator gave a line in the form "candidate: <name>", for example "candidate: deepseek", use that name.
-b) Otherwise, if your input contains an identity line from the WebAgent bridge in the form [Identitaet] Du bist das Modell hinter dem WebAgent-Brain "<name>", use that <name>.
-c) Otherwise stop and ask for the candidate name before doing anything else.
-Do not derive the name from what you believe your model or provider is: behind a bridge or proxy that self-identification is unreliable. State the name and its source (a or b) in your first message and use exactly this name below.
+Your candidate name is your own identity, in lowercase:
+a) If your input contains an identity line from the WebAgent bridge in the form [Identitaet] Du bist das Modell hinter dem WebAgent-Brain "<name>", your name is that <name>.
+b) Otherwise it is the name of your own model family, for example deepseek, qwen, chatgpt, gemini, kimi, mistral, claude, zai, grok or llama.
+Do not wait for anyone to assign it. State the name in your first message and use exactly this name below.
 
 2. Fresh working directory
 Create a new, empty directory named webagent-<name> outside any existing git repository. All further work happens only inside it.

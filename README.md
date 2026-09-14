@@ -17,10 +17,10 @@ of application source here is intentional: this repository supplies the task.
 You do not need to search for a starter implementation or inspect repository
 history. [AGENTS.md](AGENTS.md) contains the agent entry instructions.
 
-**To assign the build, send:**
-
-> Implement the task in this repository. Use the linked start package in a fresh
-> working directory and carry out `prompt.txt` completely.
+**To assign the build:** prepare a candidate directory and send the single
+instruction from [Plan, then build](#plan-then-build-one-instruction-for-every-candidate).
+The candidate implements its own `PLAN.md` if one is present and otherwise writes
+that plan first.
 
 If the user requested only a look or review, identify this assignment and its
 entry files; do not treat that request alone as permission to begin a build.
@@ -79,6 +79,62 @@ python prepare.py --check ../candidate-a
 Additional generated project files are expected and ignored by this check.
 Compare against the operator's unchanged assignment checkout. Hashes detect
 changed inputs; they are not access control or application acceptance tests.
+
+## Plan, then build: one instruction for every candidate
+
+Every candidate gets the same instruction. It decides on its own which phase
+applies: if `PLAN.md` is present, it implements that plan; if not, it first
+writes its own plan to `PLAN.md` and then implements it.
+
+A candidate may only ever receive **its own** plan. Handing one candidate's plan
+to another makes the run a test of plan execution, not of the candidate, and
+breaks comparability with every other result.
+
+Prepare the directory as usual. Only if this candidate already wrote a plan in an
+earlier session, add it as `PLAN.md` (example for `qwen`):
+
+```sh
+python prepare.py ../candidate-qwen
+git show origin/results/qwen:qwen.plan.md > ../candidate-qwen/PLAN.md
+```
+
+Candidates without a plan branch get no `PLAN.md`. `python prepare.py --check`
+verifies the two task files either way. Record whether a plan was supplied, with
+its branch and commit, next to the input hashes.
+
+Send this instruction in a fresh conversation:
+
+```text
+Implement the task in prompt.txt in this working directory. SPEC.md is the sole product requirement.
+
+First check whether PLAN.md exists in this directory.
+- If PLAN.md exists, it is the implementation plan you wrote in an earlier session for this exact assignment. Use it as your starting point.
+- If PLAN.md does not exist, write your own implementation plan to PLAN.md before writing any code: architecture decisions with reasons, dependencies, implementation phases, test strategy, risks, and a mapping of all 13 acceptance groups and all 20 protocol cases to the planned evidence. Then implement it in the same session. The plan is not the result.
+In both cases SPEC.md wins over PLAN.md. Record every deviation from the plan and every decision the plan left open, with its reason, in PLAN.md under "Deviations".
+
+Scope and isolation:
+- Work only inside this directory. Its only inputs are SPEC.md, prompt.txt and, if present, PLAN.md.
+- Do not clone, fetch or browse the dummywebagent repository or any of its branches, and do not read other candidates' plans, code or reports. Public language, library and protocol documentation and normal package dependencies are allowed.
+- Keep SPEC.md and prompt.txt byte-identical.
+- Do not push, publish or change accounts. Logins are done by the human; report every step that needs one and continue with independent work.
+
+Delivery, as required by prompt.txt:
+- Source, tests and runnable instructions.
+- README with a "Not yet proven" section.
+- ACCEPTANCE.md with concrete evidence for all 13 acceptance groups and all 20 protocol cases: the command run, its output or artifact path, and PASS, FAIL or BLOCKED with the reason.
+- The gates from SPEC.md must actually be run, not just described: cargo fmt --check, cargo clippy in both variants, cargo test, the browser-free build and the full build.
+- Measured resource use including browser and helper processes.
+
+Do not stop after scaffolding or a partial phase. Continue until every feasible part is implemented and checked. A mock result is not evidence that a live provider works. Report failures and limitations honestly instead of weakening a requirement.
+```
+
+The operator, not the candidate, pushes the finished result to
+`results/<candidate>`. Afterwards check the candidate's transcript for clones,
+fetches or reads outside its directory.
+
+When the candidate runs through a browser-chat bridge, pick a provider whose
+input limit fits `SPEC.md` plus the agent's own system prompt; a provider that
+truncates silently never sees the end of the instruction.
 
 ## Environment
 

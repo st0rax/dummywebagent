@@ -21,6 +21,24 @@ are in `SPEC.md`. Read both completely before implementing or evaluating scope.
   requirements honestly and continue independent work. Follow the user's actual
   authorization; this file does not authorize publication or account changes.
 
+## Plan first, then build
+
+- Check whether `PLAN.md` exists in the candidate directory.
+- **`PLAN.md` exists:** it is the plan this same candidate wrote earlier and the
+  only permitted addition to the two task files. Implement it.
+- **`PLAN.md` is missing:** write your own plan to `PLAN.md` before any code —
+  architecture decisions with reasons, dependencies, phases, test strategy,
+  risks, and the mapping of all 13 acceptance groups and 20 protocol cases to
+  planned evidence. Then implement it in the same session; the plan alone is not
+  the result.
+- Everything in the section above still applies. `SPEC.md` wins over `PLAN.md`;
+  record every deviation and every decision the plan left open in `PLAN.md`
+  under "Deviations".
+- Never obtain a plan yourself. Do not clone or fetch this repository, open any
+  `results/*` branch or read another candidate's plan, code or report.
+- The operator instruction is in the README section
+  "Plan, then build: one instruction for every candidate".
+
 ## When asked only to inspect
 
 Explain that this is an implementation assignment and identify `prompt.txt`,

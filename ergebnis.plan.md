@@ -1,7 +1,7 @@
 # Gegenüberstellung der Umsetzungspläne — WebAgent Revision 2.2
 
 **Status:** Entwurf, wird mit jedem eintreffenden Plan ergänzt
-**Stand:** 2026-09-14, drei von acht Kandidaten mit Plan
+**Stand:** 2026-09-14, vier von acht Kandidaten mit Plan
 **Grundlage:** `SPEC.md` (SHA-256 `4c459afc…16c5e`), `prompt.txt` (`e6cc79a3…67274`)
 
 Dieses Dokument vergleicht Pläne, keine Implementierungen. Aussagen in einem Plan
@@ -16,45 +16,53 @@ beziehen sich auf die Nummerierung im jeweiligen Plan.
 Diese Punkte begrenzen, wie weit die Vergleiche tragen. Sie stehen vorn, damit
 kein Leser die Tabellen unten für kontrollierte Messungen hält.
 
-1. **Ungleicher Eingabeweg bei deepseek.** deepseeks Plan entstand in einer
-   interaktiven Pi-Session. Dort hat das Modell das Repository geklont und neben
-   `SPEC.md` und `prompt.txt` auch `EVALUATION.md`, `README.md`, `AGENTS.md` und
-   `prepare.py` gelesen — also die Operator-Checkliste. Alle übrigen Kandidaten
-   bekommen ausschließlich `SPEC.md` und `prompt.txt` als direkte Eingabe, ohne
-   Klon. Dieser Vorteil erklärt allerdings weniger als zunächst angenommen:
-   chatgpt erreicht mit der schmaleren Eingabe eine breitere Abdeckung der
-   Akzeptanzgruppen als deepseek.
+1. **Drei verschiedene Eingabewege.**
+   - *deepseek* entstand in einer interaktiven Pi-Session. Das Modell hat das
+     Repository geklont und neben `SPEC.md` und `prompt.txt` auch
+     `EVALUATION.md`, `README.md`, `AGENTS.md` und `prepare.py` gelesen — also
+     die Operator-Checkliste.
+   - *qwen* und *chatgpt* bekamen über Pi ausschließlich `SPEC.md` und
+     `prompt.txt` als Dateien plus Anweisung, eingebettet in Pis Systemprompt
+     von rund 17.300 Zeichen.
+   - *gemini* bekam dieselben Dateien und dieselbe Anweisung als einzelne
+     Nachricht direkt an die Bridge, ohne Pi-Systemprompt.
+
+   Der Vorteil durch die Operator-Checkliste erklärt weniger als zunächst
+   angenommen: chatgpt erreicht mit der schmaleren Eingabe eine breitere
+   Abdeckung der Akzeptanzgruppen als deepseek.
 2. **Formatverlust durch die Bridge.** Antworten werden per `innerText` aus der
    gerenderten Oberfläche gelesen; Markdown ist dort bereits HTML und wird nicht
-   zurückgewonnen. In qwens Plan sind alle Tabellen zerfallen, chatgpts Plan hat
-   eine einzige Zeile mit `#`, keine Tabellenzeile und keinen Code-Fence, in
-   deepseeks Plan steht ein verwaistes `text` aus einem verlorenen Fence.
-   **Formatierung wird hier nicht bewertet** — sie misst den Transportweg.
-   Erfasst als T-942 in `webagent-rs`.
+   zurückgewonnen. Tabellen zerfallen, Überschriften verlieren ihr `#`,
+   Code-Fences verschwinden. **Formatierung wird hier nicht bewertet** — sie
+   misst den Transportweg. Erfasst als T-942 in `webagent-rs`.
 3. **Operatorfehler: gelöschte Ausgabe.** Im ersten Durchgang meldete die Bridge
    für gemini eine Antwort, Pi gab 202 Bytes zurück, und das Ablaufskript hat
-   sie gelöscht, weil es kurze Ausgaben für leer hielt. Der zweite Durchgang
-   löscht nichts mehr.
+   sie gelöscht, weil es kurze Ausgaben für leer hielt.
 4. **Operatorfehler: Plan per Byte-Grenze erkannt.** Der zweite Durchgang
-   übernahm jede Ausgabe ab 1.500 Bytes als Plan. geminis 4.277 Bytes waren
-   jedoch keine Planung, sondern ein offengelegter Denkprozess mit Rückfrage
-   (siehe 2a). Erst das Lesen hat das aufgedeckt; die Datei ist umbenannt, nicht
-   gelöscht. Jede Übernahme in diesem Dokument ist deshalb inhaltlich geprüft.
+   übernahm jede Ausgabe ab 1.500 Bytes als Plan. geminis 4.277 Bytes aus dem
+   Pi-Weg waren jedoch ein offengelegter Denkprozess mit Rückfrage. Erst das
+   Lesen hat das aufgedeckt. Jede Übernahme in diesem Dokument ist inhaltlich
+   geprüft.
 5. **Operatorfehler: Schluss aus unvollständiger Stichprobe.** Ein früherer
-   Entwurf nannte Deduplizierung und den Aktions-Envelope-Beweis „in keinem Plan
-   ausdrücklich", als erst zwei Pläne vorlagen. chatgpt deckt beide ab. Abschnitt
-   7 ist korrigiert.
-6. **Selbstblockade durch den Circuit-Breaker.** Pis interne Wiederholungen
+   Entwurf nannte zwei Anforderungen „in keinem Plan ausdrücklich", als erst
+   zwei Pläne vorlagen. chatgpt deckt beide ab.
+6. **Operatorfehler: Kennzeilentest nicht eindeutig.** Beim Direktweg steht der
+   Satz mit der Kennzeile hinter dem Planauftrag. Fehlt die Kennzeile in der
+   Antwort, lässt sich ein Schnitt genau zwischen beiden nicht von einem Modell
+   unterscheiden, das die Formatvorgabe übergeht (siehe 2b).
+7. **Operatorentscheidung: zweiter Durchgang für mistral abgebrochen.** Der
+   Pi-Weg hätte bis zu 20 Minuten gebunden, ohne einen Fehler nach dem Absenden
+   aufzuklären; mistral erhielt stattdessen den Direktweg.
+8. **Selbstblockade durch den Circuit-Breaker.** Pis interne Wiederholungen
    lassen den Breaker innerhalb eines einzelnen Versuchs zuschnappen. Danach
    laufen die restlichen Wiederholungen gegen `circuit_open`, ohne den Browser zu
-   erreichen. Mehrere Fehlschläge sind dadurch länger als nötig, nicht aber
-   anders im Ergebnis.
-7. **Breaker-Reset überschreibt Sperren und löscht Belege.** Das Ablaufskript
+   erreichen. Erfasst als T-945.
+9. **Breaker-Reset überschreibt Sperren und löscht Belege.** Das Ablaufskript
    leerte den Breaker vor jedem Versuch. Bei zai hatte der Code nach einem
    erkannten Sperrbanner sofort eine deterministische Sperre von 21.600 s
    gesetzt; der Reset hat diesen Eintrag samt Grund entfernt. Der Bannertext
-   selbst wird von der Bridge nicht protokolliert, nur der Grund `blocked`.
-   Welcher Hinweis bei zai angezeigt wurde, ist deshalb nicht belegt.
+   selbst wird von der Bridge nicht protokolliert. Welcher Hinweis bei zai
+   angezeigt wurde, ist deshalb nicht belegt.
 
 ---
 
@@ -63,30 +71,30 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
 | Kandidat | Plan | Eingabeweg | Ausgang |
 |---|---|---|---|
 | deepseek | ja, 286 Zeilen | interaktiv, Repo geklont, Operatormaterial gelesen | `results/deepseek` |
-| qwen | ja, 274 Zeilen | nur `SPEC.md` + `prompt.txt` | 106 s; Eingabe vollständig belegt; `results/qwen` |
-| chatgpt | ja, 2.063 Zeilen | nur `SPEC.md` + `prompt.txt` | Durchgang 1: dreimal Composer-Timeout. Durchgang 2: zwei Timeouts, dritter interner Versuch erfolgreich, 275 s; Eingabe vollständig belegt; `results/chatgpt` |
-| gemini | nein | nur `SPEC.md` + `prompt.txt` | Bridge meldet zweimal Erfolg, Eingabe aber **gekürzt**; Antwort ist Denkprozess plus Rückfrage (siehe 2a) |
-| kimi | nein | nur `SPEC.md` + `prompt.txt` | Composer-Timeout in allen Versuchen beider Durchgänge (Durchgang 1: 31–40 s, Durchgang 2: rund 62 s) |
-| mistral | nein | nur `SPEC.md` + `prompt.txt` | Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s; Durchgang 2 ausstehend |
-| claude | nein | nur `SPEC.md` + `prompt.txt` | `session_state=Unbestimmt` in allen vier Versuchen; Seite stand auf Reauth-Login, braucht Anmeldung durch den Menschen im WebView-Fenster |
-| zai | nein | nur `SPEC.md` + `prompt.txt` | Sperrbanner erkannt (`blocked`), deterministische Sperre 21.600 s |
+| qwen | ja, 274 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | 106 s; Eingabe vollständig belegt; `results/qwen` |
+| chatgpt | ja, 2.063 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | Durchgang 1: dreimal Composer-Timeout. Durchgang 2: zwei Timeouts, dritter interner Versuch erfolgreich, 275 s; Eingabe vollständig belegt; `results/chatgpt` |
+| gemini | ja, 106 Zeilen | Direktweg, ohne Pi-Systemprompt | Über Pi zweimal **gekürzte** Eingabe mit Rückfrage (siehe 2a). Direktweg: 26 s, Planauftrag nachweislich angekommen, Kennzeile fehlt (siehe 2b); `results/gemini` |
+| kimi | nein | Pi; dann Direktweg | Pi-Weg: Composer-Timeout in allen Versuchen beider Durchgänge. Direktweg bei 32.134 Zeichen: ebenfalls Composer-Timeout nach 23 s — das Problem hängt nicht an der Eingabegröße |
+| mistral | offen | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen. Direktweg läuft |
+| claude | nein | Pi | `session_state=Unbestimmt` in allen vier Versuchen; Seite stand auf Reauth-Login, braucht Anmeldung durch den Menschen im WebView-Fenster |
+| zai | nein | Pi | Sperrbanner erkannt (`blocked`), deterministische Sperre 21.600 s |
 
 **Vollständigkeit der Eingabe** ist hier inhaltlich belegt, nicht über die
-Bridge: `prompt.txt` steht hinter `SPEC.md`. qwen und chatgpt nennen beide
-`ACCEPTANCE.md` und den Abschnitt „Not yet proven" aus `prompt.txt` sowie Gruppen
-vom Ende der Spec. Ihre Eingabe kam damit bis zum Schluss an.
+Bridge. Beim Pi-Weg steht `prompt.txt` hinter `SPEC.md`: qwen und chatgpt nennen
+`ACCEPTANCE.md` und den Abschnitt „Not yet proven" sowie Gruppen vom Ende der
+Spec; ihre Eingabe kam bis zum Schluss an. Beim Direktweg folgte gemini dem
+Planauftrag, der erst nach beiden Dateien steht.
 
-Bei identischer Eingabe von 52.287 Zeichen haben **qwen und chatgpt** einen
-Plan geliefert. gemini hat die Bridge-Ebene bestanden, aber nie den vollständigen
-Auftrag gesehen. kimi scheiterte am Befüllen des Composers, mistral nach dem
-Absenden, zai an einem Sperrbanner, claude an einer abgelaufenen Anmeldung. Die
-Größe allein erklärt die Ausfälle nicht, und chatgpt zeigt, dass derselbe
-Anbieter bei derselben Eingabe mal scheitert und mal besteht.
+Vier Kandidaten haben geliefert. Die Ausfälle haben vier verschiedene Ursachen:
+kimi scheitert am Befüllen des Composers unabhängig von der Größe, mistral nach
+dem Absenden, zai an einem Sperrbanner, claude an einer abgelaufenen Anmeldung.
+chatgpt zeigt außerdem, dass derselbe Anbieter bei derselben Eingabe mal
+scheitert und mal besteht.
 
-### 2a. gemini: gekürzte Eingabe, als Erfolg gemeldet
+### 2a. gemini über Pi: gekürzte Eingabe, als Erfolg gemeldet
 
-geminis Antwort beginnt mit seinem sichtbaren Denkprozess auf Englisch: Es
-überlegt, welche Werkzeuge es hat, findet in Pis mitgeschicktem Systemprompt
+geminis Antwort über Pi beginnt mit seinem sichtbaren Denkprozess auf Englisch:
+Es überlegt, welche Werkzeuge es hat, findet in Pis mitgeschicktem Systemprompt
 Beschreibungen für Lesen, Schreiben und Shell, stellt fest, dass es diese nicht
 aufrufen kann, und hält die Eingabe für einen eingefügten Gesprächsverlauf. Erst
 danach folgt die eigentliche Antwort: eine Rückfrage, wobei es helfen solle.
@@ -95,50 +103,61 @@ Den Schnittpunkt nennt gemini selbst wörtlich: die Eingabe endet bei
 `| Type | Additional fields a`. Das ist Zeile 279 der `SPEC.md`, der Kopf der
 Aktionstabelle, rund 15.030 Zeichen in die Datei hinein. Weil die Anweisung am
 Ende hinter beiden Dateien stand, hat gemini den Auftrag nie gesehen. Die
-Aktionstypen, die es anschließend als „typisch" aufzählt, sind geraten — den
-Tabelleninhalt hat es nie erhalten.
+Aktionstypen, die es anschließend als „typisch" aufzählt, sind geraten.
 
 Belegt:
 
 - **Die Bridge kürzt den Prompt nicht.** `truncate_chars` wird in
   `browser_inference.rs` nur auf Tool-Beschreibungen angewandt, und eine
-  `brain_limits.json` mit gemessenen Grenzen existiert nicht. Die Kürzung
-  entsteht beim Befüllen des Composers oder in geminis eigenem Eingabelimit.
+  `brain_limits.json` mit gemessenen Grenzen existiert nicht.
 - **Die Bridge kann die Kürzung nicht bemerken.** Die generische Prüfung
-  `composer_contains` sucht nur die ersten acht Zeichen des Prompts. Ein
-  abgeschnittener Anfang besteht sie. Der OpenAI-kompatible Endpunkt liefert
-  damit HTTP 200 für eine Antwort auf einen Auftrag, den das Modell nie
-  vollständig erhalten hat. Erfasst als T-943.
+  `composer_contains` sucht nur die ersten acht Zeichen des Prompts. Der
+  OpenAI-kompatible Endpunkt liefert damit HTTP 200 für eine Antwort auf einen
+  Auftrag, den das Modell nie vollständig erhalten hat. Erfasst als T-943.
 - **Der Denkbereich wird mit ausgeliefert.** Die Spec verlangt eine Antwort ohne
   unzusammenhängende Reasoning-Panels (Zeilen 417–418). Erfasst als T-944.
 
-Geschätzt: Mit Pis Systemprompt davor, der in jeder frischen Session heute rund
-17.300 Zeichen umfasste, liegt der Schnitt bei etwa 32.300 bis 32.400 Zeichen
-Gesamteingabe — wenige hundert Zeichen unter 32.768. Die Differenz liegt
-innerhalb der unbekannten Rahmentexte. **Weiterhin eine Schätzung**; der
-Direktweg ohne Pi-Systemprompt misst es mit einer Kennzeile am Ende der Eingabe.
+Geschätzt: Mit Pis Systemprompt davor liegt der Schnitt bei etwa 32.300 bis
+32.400 Zeichen Gesamteingabe.
+
+### 2b. gemini über den Direktweg: Plan geliefert
+
+Der Direktweg schickt dieselben Aufgabendateien und dieselbe Anweisung als
+einzelne Nachricht direkt an die Bridge. Die Eingabe umfasste 32.134 Zeichen,
+und genau diese Zahl hat auch die Bridge gemessen — eine Einzelnachricht wird
+ohne Rahmen durchgereicht.
+
+Ergebnis: HTTP 200 nach 26 s, 106 Zeilen, ein englischsprachiger Plan mit den
+verlangten Abschnitten.
+
+**Die Kennzeile fehlt, und das ist nicht als unvollständige Eingabe zu werten.**
+Der Planauftrag steht rund 430 Zeichen vor dem Ende; ohne ihn hätte gemini
+nicht gewusst, welche Abschnitte verlangt sind. Unbelegt sind nur die letzten
+etwa 110 Zeichen mit der Kennzeile. Belegt ist damit eine Untergrenze: mindestens
+rund 31.700 Zeichen kamen an. Ob danach gekürzt wurde oder das Modell die
+Formatvorgabe übergangen hat, klärt eine kurze Probe weit unter jeder Grenze.
 
 ---
 
 ## 3. Architekturentscheidungen im Vergleich
 
-| Bereich | deepseek | qwen | chatgpt |
-|---|---|---|---|
-| HTTP-Server | eigener HTTP/1.1-Parser auf `std::net`, begrenzter Thread-Pool; axum/hyper ausdrücklich verworfen | `axum` + `tokio` | `hyper` auf `tokio`, nur die direkt benötigten Komponenten (§3.2) |
-| Begründung | Framing-, Origin-, Host- und Fragmentierungsregeln direkter prüfbar als über Middleware | lesbares Routing, native SSE | echter Parser für fragmentierte Übertragung, SSE ohne eigenen Webserver, Limits kontrollierbar |
-| Nebenläufigkeit | Thread pro Verbindung, globale Inferenz-Mutex mit FIFO | `tokio::sync::RwLock`, Warteschlange | serieller Dispatcher: genau ein aktiver Turn, FIFO, begrenzte Wartezeit, `max_queue = 0` erlaubt nur den aktiven Turn (§3.3) |
-| Isolation nach Timeout | Provider bis bestätigter Recovery als 503 | nicht beschrieben | Provider bleibt „unavailable" bis bestätigter Wiederherstellung (§3.4) |
-| CLI | handgeschrieben; `clap` wäre größter Einzelposten im Binary | `clap` mit derive | gemeinsamer Parser, **Bibliothek nicht festgelegt** |
-| Browser | `tungstenite` + `ureq` + eigene CDP-Schicht | `headless_chrome` | eigene Adapter-Schicht, „embedded browser integration", **Technik nicht festgelegt** (§5, Phase 9) |
-| Messenger | handgeschriebenes HTML/CSS/JS per `include_str!` | Single-File HTML/CSS/JS per `include_str!` | zur Compile-Zeit eingebettet; sicherer eigener Renderer oder streng begrenzte Markdown-Bibliothek (§21–22) |
-| Token im Messenger | nur im Speicher, keine Browser-Storage-Persistenz | Session-Cookies für Bootstrap-Routen | nicht in localStorage, nicht persistiert, keine gecachten Antworten mit Token; **Mechanismus noch offen** (§23) |
-| Speicher | JSONL append-only, Lock, Crash-Recovery | NDJSON append-only | append- oder transaktionsorientiert, atomare Updates, Recovery-Records; **Format nicht festgelegt** |
-| Abhängigkeiten | bewusst minimiert, je Eintrag begründet | Standard-Ökosystem | „kleine Dependency-Menge", Folgen großer Abhängigkeiten später dokumentieren (Risiko 11) |
+| Bereich | deepseek | qwen | chatgpt | gemini |
+|---|---|---|---|---|
+| HTTP-Server | eigener HTTP/1.1-Parser auf `std::net`; axum/hyper ausdrücklich verworfen | `axum` + `tokio` | `hyper` auf `tokio`, nur benötigte Komponenten | Aufzählung ohne Festlegung, `axum` mit `tokio` als Alternative |
+| Begründung | Framing-, Origin-, Host- und Fragmentierungsregeln direkter prüfbar | lesbares Routing, native SSE | echter Parser für fragmentierte Übertragung, Limits kontrollierbar | Routing, SSE, Kontrolle über Header, Origins und Body-Grenzen |
+| Nebenläufigkeit | Thread pro Verbindung, globale Inferenz-Mutex mit FIFO | `tokio::sync::RwLock`, Warteschlange | serieller Dispatcher, genau ein aktiver Turn, FIFO, begrenzte Wartezeit | Warteschlangengrenze genannt, Modell nicht beschrieben |
+| Isolation nach Timeout | Provider bis bestätigter Recovery als 503 | nicht beschrieben | Provider bleibt „unavailable" bis bestätigter Wiederherstellung | nicht beschrieben |
+| CLI | handgeschrieben; `clap` wäre größter Einzelposten im Binary | `clap` mit derive | Bibliothek nicht festgelegt | Bibliothek nicht festgelegt |
+| Browser | `tungstenite` + `ureq` + eigene CDP-Schicht | `headless_chrome` | eigene Adapter-Schicht, **Technik nicht festgelegt** | „chromiumoxide or headless_chrome", **nicht festgelegt** |
+| Messenger | handgeschriebenes HTML/CSS/JS per `include_str!` | Single-File HTML/CSS/JS per `include_str!` | zur Compile-Zeit eingebettet, eigener Renderer oder begrenzte Bibliothek | Single-File HTML/CSS/JS per `include_str!` |
+| Token im Messenger | nur im Speicher | Session-Cookies für Bootstrap-Routen | nicht in localStorage, nicht persistiert; Mechanismus offen | nicht beschrieben |
+| Speicher | JSONL append-only, Lock, Crash-Recovery | NDJSON append-only | append- oder transaktionsorientiert; Format offen | „JSON Lines or structured JSON", **nicht festgelegt** |
+| Abhängigkeiten | bewusst minimiert, je Eintrag begründet | Standard-Ökosystem | kleine Menge, Folgen später dokumentieren | nicht thematisiert |
 
 **Muster:** deepseek entscheidet am meisten und begründet jede Abhängigkeit.
-qwen entscheidet konventionell. chatgpt beschreibt Verhalten am genauesten,
-lässt aber gerade die riskanten Technikfragen offen — Browseranbindung,
-CLI-Bibliothek, Speicherformat, Token-Mechanismus. Die Browseranbindung ist die
+qwen entscheidet konventionell. chatgpt beschreibt Verhalten am genauesten, lässt
+aber die riskanten Technikfragen offen. gemini lässt am meisten offen. Die
+Browseranbindung ist bei zwei von vier Plänen unentschieden — und sie ist die
 Stelle, an der am 2026-09-14 alle realen Ausfälle auftraten.
 
 ---
@@ -146,29 +165,26 @@ Stelle, an der am 2026-09-14 alle realen Ausfälle auftraten.
 ## 4. Abgleich mit der Spec
 
 **Frameworks sind zulässig.** Zeile 477 schließt ausdrücklich jedes
-Framework-Verbot aus. qwens `axum` und chatgpts `hyper` auf `tokio` sind damit
-keine Verstöße, sondern Abwägungen gegen das Produktziel Ressourceneffizienz
-(Zeilen 20–23).
+Framework-Verbot aus. `axum` oder `hyper` auf `tokio` sind damit keine Verstöße,
+sondern Abwägungen gegen das Produktziel Ressourceneffizienz (Zeilen 20–23).
 
 **„Eingebetteter Browser" ist nicht definiert — Spec-Unschärfe.** Zeilen
 412–414 verlangen einen sichtbaren eingebetteten Browser und definieren
 `--headless` als verstecktes Fenster, nicht als displayfreien echten Browser.
-deepseek und qwen steuern beide einen externen Chromium über CDP; chatgpt
-verwendet den Begriff „embedded", ohne ihn technisch zu füllen. Ob ein extern
-per CDP gesteuerter Browser „eingebettet" ist, lässt die Spec offen. Bei qwen
-kommt ein Risiko hinzu: die gewählte Bibliothek ist auf displayfreien Betrieb
-ausgelegt, und der Plan sagt nicht, wie der Login sichtbar bleibt.
+deepseek und qwen steuern einen externen Chromium über CDP, gemini erwägt zwei
+CDP-Bibliotheken, chatgpt verwendet den Begriff „embedded", ohne ihn technisch
+zu füllen. Ob ein extern per CDP gesteuerter Browser „eingebettet" ist, lässt die
+Spec offen. Bei qwen und gemini neigt die Bibliothekswahl zu displayfreiem
+Betrieb, und beide sagen nicht, wie der Login sichtbar bleibt.
 
 **Browser- und Hilfsprozesse zählen zum Footprint** (Zeilen 27–28). deepseek
-nennt den Prozessbaum einschließlich Browser und Helfern, chatgpt ebenso
-einschließlich Laufzeitumgebung und Shared-Memory-Zählweise (Phase 12,
-Risiko 3). qwen nennt nur „Messung und Dokumentation im README".
+und chatgpt nennen den Prozessbaum einschließlich Browser und Helfern. qwen und
+gemini nennen Ressourcenmessung ohne diese Aufschlüsselung.
 
 **Token-Handhabung bei qwen.** Bootstrap-Routen brauchen laut Zeile 78 gar
 keinen Token. Ein Cookie, das den Token trägt, geriete in Konflikt mit Zeile 71
 (Token nicht auf die Platte), sobald der Browser Sitzungscookies persistiert.
-Das ist ein Risiko in qwens Formulierung, kein belegter Verstoß — der Plan sagt
-nicht, was das Cookie enthält.
+Das ist ein Risiko in qwens Formulierung, kein belegter Verstoß.
 
 ---
 
@@ -177,56 +193,65 @@ nicht, was das Cookie enthält.
 Bewertet wird, ob der Plan die in der Spec genannten Prüfinhalte vorsieht —
 nicht, ob sie später erreicht werden.
 
-| # | Gruppe | deepseek | qwen | chatgpt |
-|---:|---|---|---|---|
-| 1 | Browser-free build | vorgesehen | vorgesehen | vorgesehen |
-| 2 | Full build, Windows und Linux getrennt | vorgesehen; Linux ehrlich als unbewiesen geführt | als Ergebnis formuliert („erfolgreich"), in einem Plan nicht belegbar | Plattformen getrennt berichtet, fehlende als BLOCKED statt PASS |
-| 3 | Formatting | vorgesehen | vorgesehen | vorgesehen |
-| 4 | Clippy in **beiden** Varianten (Z. 486–487) | beide Varianten | **nur eine** Variante, `--no-default-features` fehlt | beide Varianten ausdrücklich (Phase 14) |
-| 5 | Coding behavior | 20 Fälle, Guards, transaktionales Editieren, Escapes, Audit vor Ausführung, unterbrochener Speicher, unbekannter Ausgang, Proof-Invalidierung; Deduplizierung nicht ausdrücklich | 20 Fälle, Guards, Escapes, Resume; **fehlen** Audit-Reihenfolge und -Ausfall, unterbrochener Speicher, unbekannter Ausgang, Proof-Invalidierung, Deduplizierung | 20 Fälle einzeln benannt, Guards mit Standardwerten, **Deduplizierung** (§20), byte-genau transaktionales Editieren, Escapes einschließlich Junctions, keine Ausführung bei nicht schreibbarem Audit (§15), unbekannter Ausgang ohne Wiederholung (§18), Lock-Wiederherstellung, Proof-Invalidierung |
-| 6 | API behavior | Nullwerte bei usage, Parameterpolitik, Framing, Isolation, Fehlercodes; Aktions-Envelope nicht ausdrücklich | Auth, Origin, Host, SSE, Queue, Timeout, Isolation; **fehlen** usage, nicht unterstützte Parameter, fehlerhafte und fragmentierte Anfragen, Aktions-Envelope | beide Adapter und Modi, usage, vollständige Parameterpolitik (§8), Auth-, Origin-, Host- und Framing-Varianten, Isolation auch nach Timeout (§45), **Beweis für nicht ausgeführtes Aktions-Envelope** (§46) |
-| 7 | Messenger, tatsächliches Rendering testen (Z. 502–503) | „Rendering real testen, nicht nur den Escape-Helfer" | manuelle Checkliste plus Test-HTML-Datei; ob damit das echte Rendering automatisiert geprüft wird, bleibt offen | automatisierte DOM- und Renderingtests, ausdrücklich nicht nur eine Escape-Funktion (§47) |
-| 8 | Binding | vorgesehen | vorgesehen | vorgesehen |
-| 9 | Reproducibility | Offline-Kernsuite, übersprungene Tests nicht als bestanden | Cargo.lock, Toolchain; „übersprungen ist nicht bestanden" fehlt | Offline-Lauf, Toolchain, Cargo.lock; plattformabhängige Tests als blockiert gekennzeichnet |
-| 10 | CLI/REPL | Kommandos, Slash-Befehle, JSON-Vertrag, Exit-Codes | Hilfe, Exit-Codes, JSON; Slash-Befehle nicht erwähnt | alle Kommandos und Slash-Befehle, freier Text startet Coding, `/chat` ohne Werkzeuge |
-| 11 | Honest diagnostics | Proof-Ablauf, geänderte Integration, Messfehler invalidieren | nur `doctor` ohne Profile | configured, reachable, measured und proven getrennt; Ablauf nach 14 Tagen und Invalidierung (§25) |
-| 12 | Handoff | alle README-Punkte der Spec | README und „Not yet proven"; API-Grenzen, Parameter, usage nicht genannt | alle README-Punkte der Spec (Phase 13) |
-| 13 | Clean delivery | vorgesehen | vorgesehen | vorgesehen |
+| # | Gruppe | deepseek | qwen | chatgpt | gemini |
+|---:|---|---|---|---|---|
+| 1 | Browser-free build | vorgesehen | vorgesehen | vorgesehen | vorgesehen |
+| 2 | Full build, Windows und Linux getrennt | Linux ehrlich als unbewiesen geführt | als Ergebnis formuliert, in einem Plan nicht belegbar | getrennt berichtet, fehlende als BLOCKED | Host-Build, keine getrennte Plattformangabe |
+| 3 | Formatting | vorgesehen | vorgesehen | vorgesehen | vorgesehen |
+| 4 | Clippy in **beiden** Varianten | beide | **nur eine** | beide | beide |
+| 5 | Coding behavior | 20 Fälle, Guards, transaktional, Escapes, Audit vor Ausführung, unterbrochener Speicher, unbekannter Ausgang, Proof-Invalidierung | 20 Fälle, Guards, Escapes, Resume | alles davon plus **Deduplizierung**, keine Ausführung bei nicht schreibbarem Audit, Lock-Wiederherstellung | 20 Fälle, Mehrzyklus-Aufgabe, Guards, transaktional, Escapes, Resume |
+| 6 | API behavior | usage, Parameterpolitik, Framing, Isolation, Fehlercodes | Auth, Origin, Host, SSE, Queue, Timeout, Isolation | alles davon plus Isolation nach Timeout und **Aktions-Envelope-Test** | Adapter, SSE, Auth, Origin, Host, Größengrenzen, Queue, Timeout, Parametertabellen |
+| 7 | Messenger, tatsächliches Rendering testen | echtes Rendering, nicht nur Escape-Helfer | manuelle Checkliste plus Test-HTML; offen | automatisierte DOM- und Renderingtests | Asset-Prüfung und UI-Unit-Tests; echtes Rendering offen |
+| 8 | Binding | vorgesehen | vorgesehen | vorgesehen | vorgesehen, Bootstrap offen und `/v1` gesichert |
+| 9 | Reproducibility | übersprungen ist nicht bestanden | Cargo.lock, Toolchain | plattformabhängige Tests als blockiert | Toolchain, Cargo.lock, Offline-Kernsuite |
+| 10 | CLI/REPL | Kommandos, Slash-Befehle, JSON, Exit-Codes | ohne Slash-Befehle | vollständig | vollständig einschließlich Slash-Befehle |
+| 11 | Honest diagnostics | Proof-Ablauf und Invalidierung | nur `doctor` ohne Profile | Ablauf nach 14 Tagen, Invalidierung | nur `doctor` ohne Profile |
+| 12 | Handoff | alle README-Punkte | README und „Not yet proven" | alle README-Punkte | README, Ressourcen, Sicherheitsgrenzen |
+| 13 | Clean delivery | vorgesehen | vorgesehen | vorgesehen | vorgesehen, MIT-Lizenz genannt |
 
 ---
 
 ## 6. Wo die Pläne übereinstimmen
 
-Übereinstimmung dreier unabhängiger Leser spricht dafür, dass die Spec an diesen
-Stellen eindeutig ist.
+Übereinstimmung von vier unabhängigen Lesern spricht dafür, dass die Spec an
+diesen Stellen eindeutig ist.
 
 - Messenger als zur Compile-Zeit eingebettete Assets, kein Frontend-Build.
 - Browser hinter Feature-Flag, `--no-default-features` ohne Browserbibliotheken.
-- Mock-Provider vor echtem Browser-Provider.
-- Append- oder transaktionsorientierte Protokolle für die Laufhistorie.
-- Die 20 Protokollfälle als benannte Einzeltests.
-- Arbeitsverzeichnis per kanonischem Pfadvergleich abgeschottet.
+- Mock-fähiger Kern vor echtem Browser-Provider.
+- Die 20 Protokollfälle als Tests.
+- Pfadabschottung gegen absolute Pfade, `..` und Symlinks.
 - Denylist plus Strict-Modus für die Shell.
+- Beide Clippy-Varianten bei drei von vier.
 
-## 7. Anforderungen, die zwei von drei Plänen übersehen
+## 7. Anforderungen, die mehrere Pläne übersehen
 
 Übersehen mehrere unabhängige Pläne dieselbe Anforderung, ist sie in der Spec
-vermutlich zu leicht zu überlesen. Beide Punkte stehen nur im Text der
-Akzeptanzgruppen, nicht in den Verhaltensabschnitten.
+vermutlich zu leicht zu überlesen. Die folgenden Punkte stehen fast nur im Text
+der Akzeptanzgruppen, nicht in den Verhaltensabschnitten.
+
+**Drei von vier übersehen:**
 
 - **Beweis, dass die API ein Aktions-Envelope nicht ausführt** (Gruppe 6,
-  Zeilen 498–499) — nur bei chatgpt ausdrücklich.
-- **Deduplizierung** (Gruppe 5, Zeile 490) — nur bei chatgpt ausdrücklich.
+  Zeilen 498–499) — nur bei chatgpt.
+- **Deduplizierung** (Gruppe 5, Zeile 490) — nur bei chatgpt.
+
+**Zwei von vier übersehen:**
+
+- **Proof-Invalidierung und -Ablauf** (Gruppe 11, Zeilen 515–516) — nur bei
+  deepseek und chatgpt.
+- **Nullwerte bei `usage`** (Gruppe 6, Zeile 495) — nur bei deepseek und
+  chatgpt.
 
 ## 8. Wo die Pläne auseinanderlaufen
 
 | Punkt | Einordnung |
 |---|---|
 | Eigener HTTP-Server gegen Framework | legitime Kandidatenfreiheit |
-| Nebenläufigkeitsmodell | legitime Kandidatenfreiheit; alle drei serialisieren die Inferenz |
-| Anbindung des Browsers | Spec-Unschärfe beim Begriff „eingebettet" |
-| Token im Messenger | deepseek und chatgpt: nur im Speicher; qwen: Cookie für Bootstrap-Routen — Risiko gegen Zeilen 71 und 78 |
-| Entscheidungstiefe | deepseek legt Technik fest, chatgpt beschreibt Verhalten und lässt Technik offen |
+| Nebenläufigkeitsmodell | legitime Kandidatenfreiheit; wo beschrieben, wird die Inferenz serialisiert |
+| Anbindung des Browsers | Spec-Unschärfe beim Begriff „eingebettet"; bei zwei Plänen unentschieden |
+| Token im Messenger | deepseek und chatgpt nur im Speicher; qwen Cookie für Bootstrap-Routen; gemini unbeschrieben |
+| Entscheidungstiefe | deepseek legt Technik fest; chatgpt und gemini lassen sie offen |
 
 ---
 
@@ -237,27 +262,27 @@ Entscheidungsqualität.
 
 - **chatgpt** hat die breiteste und genaueste Abdeckung der Akzeptanzgruppen und
   ist der einzige Plan, der Deduplizierung und die Grenze zwischen API und
-  Coding-Engine ausdrücklich prüft — mit derselben Eingabe wie qwen. Er lässt
-  aber die riskantesten Technikentscheidungen offen, allen voran die
-  Browseranbindung.
-- **deepseek** trifft die meisten und am besten begründeten Entscheidungen,
-  besonders bei Abhängigkeiten und HTTP-Parsing. Seine Abdeckung ist eng, aber
-  er hatte die Operator-Checkliste gelesen.
-- **qwen** wählt einen konventionellen, konkreten Stack und hat die meisten
-  Lücken gegenüber den Akzeptanzgruppen: nur eine Clippy-Variante, fehlende
-  Prüfinhalte in den Gruppen 5, 6, 11 und 12, ein unklarer Renderingtest und ein
-  riskanter Token-Mechanismus.
+  Coding-Engine ausdrücklich prüft. Er lässt aber die riskantesten
+  Technikentscheidungen offen, allen voran die Browseranbindung.
+- **deepseek** trifft die meisten und am besten begründeten Entscheidungen. Seine
+  Abdeckung ist eng, aber er hatte die Operator-Checkliste gelesen.
+- **qwen** wählt einen konventionellen, konkreten Stack und hat Lücken in den
+  Gruppen 4, 5, 6, 11 und 12 sowie einen riskanten Token-Mechanismus.
+- **gemini** liefert den dünnsten Plan und lässt am meisten offen, nennt aber
+  beide Clippy-Varianten und die Slash-Befehle. Er lief mit der rauschärmsten
+  Eingabe. gemini und qwen liegen etwa gleichauf hinter chatgpt und deepseek,
+  mit unterschiedlichen Lücken.
 
 Ein Plan, der chatgpts Abdeckung mit deepseeks Entscheidungstiefe verbindet,
-wäre stärker als jeder der drei.
+wäre stärker als jeder der vier.
 
 ---
 
 ## 10. Ausstehend
 
-- Zweiter Durchgang: kimi läuft, mistral folgt.
-- Direktweg ohne Pi-Systemprompt, mit Kennzeile als Vollständigkeitsnachweis:
-  gemini, kimi, mistral — sofern der zweite Durchgang sie nicht liefert.
+- mistral auf dem Direktweg läuft.
+- Kurze Probe an gemini, ob die fehlende Kennzeile an einer Kürzung oder an der
+  Formatvorgabe liegt.
 - claude benötigt eine Anmeldung durch den Menschen im Fenster von
   `webagent login --brain claude`.
 - zai ist durch eine deterministische Sperre blockiert.

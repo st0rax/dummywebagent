@@ -323,9 +323,13 @@ wäre stärker als jeder der vier.
   dieses Dokuments nannte diesen ersten Direktweg fälschlich „ohne Antwort“.
   Nach einem Neustart der Bridge, der die Warteschlange leerte, lief der
   Direktweg um 11:14 tatsächlich: 32.134 Zeichen, ohne Pi-Systemprompt, nach
-  856 s derselbe Fehler. Das Scheitern hängt damit weder an Pi noch am
-  Unterschied zwischen 52.287 und 32.134 Zeichen. Eine Kontrolle mit 77
-  Zeichen läuft, um Länge ganz auszuschließen.
+  856 s derselbe Fehler. Eine Kontrolle mit 77 Zeichen („antworte nur mit
+  dieser Zahl") scheiterte um 11:34 ebenso: dreimal je 92 s Budget, 324 s,
+  `timeout_no_message`. **Das Scheitern ist längenunabhängig und liegt nicht
+  an Pi.** In keinem der sechs Läufe sah die Bridge nach dem Senden eine neue
+  Nachricht, einen Stop-Button oder eine Textänderung. Ob mistral die Nachricht
+  nicht erhält oder antwortet, ohne dass die Bridge es erkennt, ist aus dem
+  versteckten Fenster heraus nicht zu unterscheiden.
 - **kimi:** kein Plan. Das Composer-Feld wird unabhängig von der Eingabegröße
   nicht gefunden.
 - **claude:** kein Plan. Benötigt eine Anmeldung durch den Menschen im Fenster

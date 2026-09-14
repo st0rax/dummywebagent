@@ -1,0 +1,1 @@
+Implement the Rust program defined in SPEC.md 100% complete. Do create the terminal-instrumentation look and feel for the web UI yourself. You may NOT touch any files outside this folder!

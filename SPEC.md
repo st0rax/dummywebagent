@@ -1,15 +1,15 @@
 # WebAgent — product specification
 
-Revision: 2.0 · 2026-09-14
+Revision: 2.1 · 2026-09-14
 
 ## Objective
 
-Create a compact, readable Rust application named `webagent`. It makes a chat
+Create a compact, readable application named `webagent`. It makes a chat
 account the user has logged into in a browser available through a local
 inference API, a messenger web interface, and an autonomous coding interface.
 
 This document defines observable behavior and acceptance criteria. Choose the
-architecture, libraries, algorithms, internal types, file organization and
+programming language, architecture, libraries, algorithms, internal types, file organization and
 implementation order yourself. No existing application is a reference solution.
 There is no implicit compatibility requirement beyond the interfaces here.
 
@@ -17,9 +17,26 @@ Aim for a small, comprehensible program that someone else can maintain. Prefer
 few concepts and justified dependencies. Neither minimum line count nor a large
 number of tests compensates for missing behavior or unreadable code.
 
+Resource efficiency is a product goal: low idle CPU use, modest memory and
+distribution size, responsive startup, and bounded resource use during work.
+Choose the language freely and explain the choice briefly in the resulting
+README. No language receives a preference or score bonus.
+
+Report startup time, idle CPU, idle/active/peak memory and distribution size with
+the test machine, workload, build mode and measurement method. Measure the
+browser-free application separately from the browser-enabled application; include
+browser/helper processes and any required runtime in the latter's footprint.
+Explain shared-memory accounting and runtime prerequisites rather than reporting
+only the small launcher process. Use repeatable local workloads for application
+overhead; provider/network latency is a separate observation. Report unavailable
+measurements honestly. No universal numeric limit is imposed without a common
+test machine and workload.
+
 ## Product boundaries
 
-- Windows and Linux, x86_64. A Rust application executable named `webagent`.
+- Windows and Linux, x86_64. A directly launchable command named `webagent`.
+  Any runtime required to launch it must be documented and included in setup
+  and resource accounting; a particular packaging technology is not prescribed.
 - The real inference source is a logged-in browser chat. No provider API key is
   requested. The user performs login in a visible embedded browser; the program
   does not enter credentials, solve CAPTCHAs or bypass access restrictions.
@@ -459,15 +476,17 @@ unproven rather than treating missing login as a broken installation.
 Each group needs explicit pass/fail/blocked evidence. There is no minimum test
 count, prescribed repository tree, framework ban or implementation recipe.
 
-1. **Browser-free build:** `cargo build --no-default-features` succeeds without
-   requiring browser libraries, an account or a display server. Runtime/linker
-   prerequisites of the selected Rust target remain legitimate prerequisites.
-2. **Full build:** `cargo build` produces the real-browser-capable application
-   on the tested host. Report Windows and Linux verification separately.
-3. **Formatting:** `cargo fmt --check` is clean.
-4. **Lint:** `cargo clippy --all-targets --no-default-features -- -D warnings`
-   and the equivalent command with default features are clean.
-5. **Coding behavior:** `cargo test --no-default-features` covers all 20 protocol
+1. **Browser-free setup:** documented setup/build and launch commands succeed
+   without requiring browser libraries, an account or a display server.
+   Prerequisites of the selected language/runtime remain legitimate prerequisites.
+2. **Full setup:** documented setup/build and launch commands produce the
+   real-browser-capable application on the tested host. Report Windows and Linux
+   verification separately. Compilation is required only if the language needs it.
+3. **Formatting:** documented language-appropriate formatting checks pass.
+4. **Static checks:** documented language-appropriate lint/static-analysis checks
+   pass for the browser-free and full application. Identify tools and settings;
+   unavailable checks are reported explicitly, not silently counted as passed.
+5. **Coding behavior:** documented automated tests cover all 20 protocol
    cases, an actual multi-cycle task producing files, each guard, deduplication,
    transactional editing, workspace escapes, audit failure/order, interrupted
    storage, resume/unknown outcomes, and proof invalidation. The actual artifacts
@@ -487,7 +506,8 @@ count, prescribed repository tree, framework ban or implementation recipe.
    needed for health/bootstrap; `/v1` remains authenticated.
 9. **Reproducibility:** automated core tests run without outbound network,
    browser or provider account after dependencies are installed. Opt-in real
-   provider tests are separate. Pin the tested toolchain and commit Cargo.lock;
+   provider tests are separate. Record exact toolchain/runtime versions and
+   reproducible dependency versions (including lockfiles where supported);
    document build/test commands and dependency setup. Do not call a skipped test
    passed, including platform-dependent symlink tests.
 10. **CLI/REPL:** command/options and slash-command behavior above are present;
@@ -497,7 +517,8 @@ count, prescribed repository tree, framework ban or implementation recipe.
 12. **Handoff:** README covers installation, usage, API compatibility limits,
     advisory parameters, zero token usage, synthetic streaming if used, local
     conversation persistence and security limits. Include a concise explanation
-    of the chosen design and a `Not yet proven` section.
+    of the chosen language/design, the resource measurements described above,
+    and a `Not yet proven` section.
 13. **Clean delivery:** runnable source, tests, embedded assets and license are
     present. No profiles, credentials, generated build artifacts or local run
     data are committed. Input `SPEC.md` and `prompt.txt` remain unchanged.

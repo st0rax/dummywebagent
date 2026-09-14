@@ -61,7 +61,8 @@ After recording functional results, separately review:
 
 | Axis | Evidence to record |
 |---|---|
-| Size | Production Rust, test Rust, UI assets, generated/vendor code separately; executable size with build profile |
+| Size | Production source, test source, UI assets, generated/vendor code separately; distribution and required runtime size with build/package mode |
+| Resources | Startup time, idle CPU, idle/active/peak memory, process tree and memory metric; browser-free and browser-enabled measurements separately |
 | Dependencies | Direct runtime/dev dependencies separately; reason for substantial dependencies |
 | Comprehensibility | Can a reviewer trace an API request and a coding task without unexplained jumps? |
 | Cohesion | Are responsibilities understandable and repeated behavior consistent? |
@@ -72,6 +73,16 @@ Do not assign a better score merely for fewer modules, more modules, a chosen
 framework, manual parsing, a named design pattern or a higher test count. Record
 concrete examples of complexity and tradeoffs. Comparable behavior is necessary
 before interpreting lower line counts as an improvement.
+
+Language choice is free and receives no bonus or penalty. Assess its consequences
+through the result. Cross-language line counts are not directly equivalent.
+Use the same host, workload, startup definition and sampling method for resource
+comparisons. Repeat local mock workloads to distinguish application overhead
+from network/provider latency. Include browser/helper processes and runtimes;
+state how shared memory is counted and whether runtime installation size is
+shared or application-specific. Compare optimized production configurations when
+available, and label development-mode measurements. Missing measurements are
+unverified, not zero. This checklist does not prescribe a benchmark implementation.
 
 ## Report
 

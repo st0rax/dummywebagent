@@ -1,12 +1,12 @@
 # dummywebagent
 
 A self-contained application-building task. Each candidate receives the same
-product specification and prompt and creates its own compact Rust program.
+product specification and prompt and creates its own compact program.
 This repository contains the assignment, not an application implementation.
 
 The desired application exposes logged-in browser chats through a local text
 inference API, a messenger and a coding CLI. The specification defines external
-behavior and acceptance criteria. Architecture, libraries, file structure,
+behavior and acceptance criteria. Programming language, architecture, libraries, file structure,
 algorithms, build order and visual design belong to the implementing agent.
 
 ## Start a candidate
@@ -50,8 +50,10 @@ changed inputs; they are not access control or application acceptance tests.
 
 Supply the same available tools and limits to candidates you intend to compare.
 Record the agent/model, input hashes, host OS, tool versions, budget, permissions,
-network access, and any manual intervention. Preinstall the Rust toolchain and
-host build prerequisites, or allow their documented setup before timing a run.
+network access, and any manual intervention. Provide a consistent policy for
+installing the agent's selected toolchain/runtime and host prerequisites. Record
+setup time separately; a missing preinstalled language must not become a hidden
+language preference. Permit documented setup within that policy.
 Choose whether dependency caches outside the workspace are writable and approve
 that consistently; the prompt permits only operator-approved cache writes.
 
@@ -71,7 +73,11 @@ The 13 acceptance groups and 20 protocol cases require evidence. Implementation
 size, number of concepts and ease of understanding are additional review axes
 after checking behavior. There is no reward for test-count padding, compressed
 code or omitted requirements. Record production code, tests, assets and
-dependencies separately.
+dependencies separately. Compare startup, CPU, memory and distribution size on
+the same machine and workload; distinguish application overhead from provider
+latency. Include required runtimes and browser/helper processes, with the memory
+metric and shared-memory accounting stated. Cross-language line counts alone
+are not a readability or efficiency ranking.
 
 This repository does not contain an independent executable acceptance suite.
 Candidate-authored passing tests are claims to inspect and rerun, not independent
@@ -79,9 +85,9 @@ certification. Live provider evidence is separate from offline acceptance.
 
 ## Assignment revision
 
-Revision 2.0 is an outcome-based assignment. It contains no source references,
+Revision 2.1 is a language-neutral, outcome-based assignment. It contains no source references,
 architecture diagram, trait definitions, prescribed module tree, dependency
-allowlist, implementation sequence or test-count target. Wire-format examples
+allowlist, implementation sequence, prescribed build tool or test-count target. Wire-format examples
 and CLI names specify observable interfaces, not an internal solution.
 
 The bootstrap authentication/origin rules, complete Messages event sequence,

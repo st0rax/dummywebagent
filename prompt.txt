@@ -1,6 +1,6 @@
 Build the complete application described in SPEC.md in this working directory.
 
-Read the entire specification. It is the sole product requirement. Optimize for a compact, readable, maintainable result with the specified behavior. Choose the architecture, dependencies, algorithms, code organization, implementation order and visual design yourself.
+Read the entire specification. It is the sole product requirement. Optimize for a compact, readable, maintainable and resource-efficient result with the specified behavior. Choose the programming language, architecture, dependencies, algorithms, code organization, implementation order and visual design yourself. No language is preferred. Explain your choice and report measured resource use, including required runtime and browser/helper processes.
 
 Create your own implementation. Do not search for or consult an existing implementation of this application, another candidate's solution, repository history or source outside this directory. Public language, library and protocol documentation and normal package dependencies may be used. Do not infer additional features or compatibility requirements.
 

@@ -1,6 +1,6 @@
 # Gegenüberstellung der Umsetzungspläne — WebAgent Revision 2.2
 
-**Status:** Entwurf, wird mit jedem eintreffenden Plan ergänzt
+**Status:** abgeschlossen für diesen Durchlauf; Nachträge nur in Abschnitt 10
 **Stand:** 2026-09-14, vier von acht Kandidaten mit Plan
 **Grundlage:** `SPEC.md` (SHA-256 `4c459afc…16c5e`), `prompt.txt` (`e6cc79a3…67274`)
 
@@ -25,7 +25,8 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
      `prompt.txt` als Dateien plus Anweisung, eingebettet in Pis Systemprompt
      von rund 17.300 Zeichen.
    - *gemini* bekam dieselben Dateien und dieselbe Anweisung als einzelne
-     Nachricht direkt an die Bridge, ohne Pi-Systemprompt.
+     Nachricht direkt an die Bridge, ohne Pi-Systemprompt — und davon wegen
+     seiner Eingabegrenze nicht die letzten Zeichen (siehe 2b und 2c).
 
    Der Vorteil durch die Operator-Checkliste erklärt weniger als zunächst
    angenommen: chatgpt erreicht mit der schmaleren Eingabe eine breitere
@@ -46,13 +47,16 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
 5. **Operatorfehler: Schluss aus unvollständiger Stichprobe.** Ein früherer
    Entwurf nannte zwei Anforderungen „in keinem Plan ausdrücklich", als erst
    zwei Pläne vorlagen. chatgpt deckt beide ab.
-6. **Operatorfehler: Kennzeilentest nicht eindeutig.** Beim Direktweg steht der
-   Satz mit der Kennzeile hinter dem Planauftrag. Fehlt die Kennzeile in der
-   Antwort, lässt sich ein Schnitt genau zwischen beiden nicht von einem Modell
-   unterscheiden, das die Formatvorgabe übergeht (siehe 2b).
+6. **Operatorfehler: zwei nicht eindeutige Tests, dann ein eindeutiger.** Beim
+   Kennzeilentest des Direktwegs stand die Kennzeile hinter dem Planauftrag;
+   bei der ersten Probe konkurrierte die Frage mit der Bauanweisung aus
+   `prompt.txt`. Erst eine Probe mit neutralem Fülltext hat Länge und
+   Anweisungskonflikt getrennt (siehe 2c). Beide frühen Zwischenurteile —
+   „Formatvorgabe übergangen" und „nur Anweisungskonflikt" — waren falsch.
 7. **Operatorentscheidung: zweiter Durchgang für mistral abgebrochen.** Der
    Pi-Weg hätte bis zu 20 Minuten gebunden, ohne einen Fehler nach dem Absenden
-   aufzuklären; mistral erhielt stattdessen den Direktweg.
+   aufzuklären; mistral erhielt stattdessen den Direktweg. Der abgebrochene
+   Browser-Turn lief in der Bridge noch knapp neun Minuten weiter (T-946).
 8. **Selbstblockade durch den Circuit-Breaker.** Pis interne Wiederholungen
    lassen den Breaker innerhalb eines einzelnen Versuchs zuschnappen. Danach
    laufen die restlichen Wiederholungen gegen `circuit_open`, ohne den Browser zu
@@ -73,17 +77,17 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
 | deepseek | ja, 286 Zeilen | interaktiv, Repo geklont, Operatormaterial gelesen | `results/deepseek` |
 | qwen | ja, 274 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | 106 s; Eingabe vollständig belegt; `results/qwen` |
 | chatgpt | ja, 2.063 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | Durchgang 1: dreimal Composer-Timeout. Durchgang 2: zwei Timeouts, dritter interner Versuch erfolgreich, 275 s; Eingabe vollständig belegt; `results/chatgpt` |
-| gemini | ja, 106 Zeilen | Direktweg, ohne Pi-Systemprompt | Über Pi zweimal **gekürzte** Eingabe mit Rückfrage (siehe 2a). Direktweg: 26 s, Planauftrag nachweislich angekommen, Kennzeile fehlt (siehe 2b); `results/gemini` |
+| gemini | ja, 106 Zeilen | Direktweg, ohne Pi-Systemprompt | Über Pi zweimal früh gekürzte Eingabe mit Rückfrage (siehe 2a). Direktweg: 26 s, Planauftrag angekommen, **Ende der Anweisung durch Eingabegrenze abgeschnitten** (siehe 2b, 2c); `results/gemini` |
 | kimi | nein | Pi; dann Direktweg | Pi-Weg: Composer-Timeout in allen Versuchen beider Durchgänge. Direktweg bei 32.134 Zeichen: ebenfalls Composer-Timeout nach 23 s — das Problem hängt nicht an der Eingabegröße |
-| mistral | offen | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen. Direktweg läuft |
+| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; der verwaiste Browser-Turn endete erst 10:44 mit demselben Fehler. Direktweg: Anfrage wartete ab 10:35 hinter diesem Turn (T-946), Client-Timeout nach 900 s ohne Antwort; Ausgang des Bridge-Turns siehe Abschnitt 10 |
 | claude | nein | Pi | `session_state=Unbestimmt` in allen vier Versuchen; Seite stand auf Reauth-Login, braucht Anmeldung durch den Menschen im WebView-Fenster |
 | zai | nein | Pi | Sperrbanner erkannt (`blocked`), deterministische Sperre 21.600 s |
 
 **Vollständigkeit der Eingabe** ist hier inhaltlich belegt, nicht über die
 Bridge. Beim Pi-Weg steht `prompt.txt` hinter `SPEC.md`: qwen und chatgpt nennen
 `ACCEPTANCE.md` und den Abschnitt „Not yet proven" sowie Gruppen vom Ende der
-Spec; ihre Eingabe kam bis zum Schluss an. Beim Direktweg folgte gemini dem
-Planauftrag, der erst nach beiden Dateien steht.
+Spec; ihre Eingabe kam bis zum Schluss an. Bei gemini ist per Messung belegt,
+dass die letzten rund 50 bis 230 Zeichen fehlten.
 
 Vier Kandidaten haben geliefert. Die Ausfälle haben vier verschiedene Ursachen:
 kimi scheitert am Befüllen des Composers unabhängig von der Größe, mistral nach
@@ -117,8 +121,8 @@ Belegt:
 - **Der Denkbereich wird mit ausgeliefert.** Die Spec verlangt eine Antwort ohne
   unzusammenhängende Reasoning-Panels (Zeilen 417–418). Erfasst als T-944.
 
-Geschätzt: Mit Pis Systemprompt davor liegt der Schnitt bei etwa 32.300 bis
-32.400 Zeichen Gesamteingabe.
+Mit Pis Systemprompt von rund 17.300 Zeichen davor passt der Schnitt in Zeile
+279 zur in 2c gemessenen Grenze von etwa 32.000 Zeichen Gesamteingabe.
 
 ### 2b. gemini über den Direktweg: Plan geliefert
 
@@ -128,14 +132,42 @@ und genau diese Zahl hat auch die Bridge gemessen — eine Einzelnachricht wird
 ohne Rahmen durchgereicht.
 
 Ergebnis: HTTP 200 nach 26 s, 106 Zeilen, ein englischsprachiger Plan mit den
-verlangten Abschnitten.
+verlangten Abschnitten. Der Planauftrag steht ab Zeichen 31.700 und kam an; die
+Kennzeile ab Zeichen 32.109 kam nicht an. Nach der Messung in 2c liegt das an
+geminis Eingabegrenze, nicht an einer übergangenen Formatvorgabe. Dazu passt,
+dass der Plan mit einem einleitenden Satz beginnt, obwohl die Anweisung im
+abgeschnittenen Teil „ohne Vorrede" verlangt — ein Hinweis, kein Beweis.
 
-**Die Kennzeile fehlt, und das ist nicht als unvollständige Eingabe zu werten.**
-Der Planauftrag steht rund 430 Zeichen vor dem Ende; ohne ihn hätte gemini
-nicht gewusst, welche Abschnitte verlangt sind. Unbelegt sind nur die letzten
-etwa 110 Zeichen mit der Kennzeile. Belegt ist damit eine Untergrenze: mindestens
-rund 31.700 Zeichen kamen an. Ob danach gekürzt wurde oder das Modell die
-Formatvorgabe übergangen hat, klärt eine kurze Probe weit unter jeder Grenze.
+Für den Vergleich heißt das: gemini hatte den vollständigen Planauftrag, aber
+nicht dessen Schlussvorgaben. Die Inhalte des Plans sind bewertbar, eine
+Vorrede ist ihm nicht anzulasten.
+
+### 2c. Messung der Eingabegrenze von gemini
+
+**Probe 1 — nicht eindeutig.** Kontrolle: eine Frage von 77 Zeichen, die nur
+eine Kontrollzahl verlangt; gemini antwortete exakt mit der Zahl. Hauptprobe:
+`SPEC.md` und `prompt.txt`, aufgefüllt auf 32.134 Zeichen, die Frage nach einer
+zweiten Zahl ab Zeichen 32.081. gemini nannte die Zahl nicht und kündigte an, die
+Anwendung zu bauen. Allein daraus war eine Kürzung nicht von einem
+Anweisungskonflikt mit der Bauanweisung aus `prompt.txt` zu unterscheiden.
+
+**Probe 2 — eindeutig.** Neutraler Fülltext ohne jede Anweisung, am Ende nur die
+Frage nach einer Kontrollzahl, jeweils mit neuer Zahl:
+
+| Eingabe | Frage beginnt bei | Antwort | Ergebnis |
+|---:|---:|---|---|
+| 20.000 Zeichen | Zeichen 19.947 | exakt die Kontrollzahl | Ende angekommen |
+| 32.134 Zeichen | Zeichen 32.081 | „Wie kann ich Ihnen heute helfen?" | Ende **nicht** angekommen |
+
+Derselbe Fülltext, derselbe Aufbau, nur die Länge verschieden. Der wiederholte
+Text löst die generische Antwort also nicht aus; es ist die Länge. In keiner
+Anfrage tauchte eine Zahl einer anderen Probe auf — kein Übersprechen.
+
+**Befund:** geminis Eingabe wird zwischen 20.000 und 32.134 Zeichen gekürzt.
+Zusammen mit dem Planlauf, bei dem der Auftrag ab Zeichen 31.700 ankam, liegt die
+Grenze zwischen **etwa 31.900 und 32.080 Zeichen**. Das ist vereinbar mit einer
+runden Grenze von 32.000, beweist sie aber nicht. Die Bridge meldete in allen
+Fällen HTTP 200.
 
 ---
 
@@ -269,20 +301,29 @@ Entscheidungsqualität.
 - **qwen** wählt einen konventionellen, konkreten Stack und hat Lücken in den
   Gruppen 4, 5, 6, 11 und 12 sowie einen riskanten Token-Mechanismus.
 - **gemini** liefert den dünnsten Plan und lässt am meisten offen, nennt aber
-  beide Clippy-Varianten und die Slash-Befehle. Er lief mit der rauschärmsten
-  Eingabe. gemini und qwen liegen etwa gleichauf hinter chatgpt und deepseek,
-  mit unterschiedlichen Lücken.
+  beide Clippy-Varianten und die Slash-Befehle. Ihm fehlten die Schlussvorgaben
+  der Anweisung. gemini und qwen liegen etwa gleichauf hinter chatgpt und
+  deepseek, mit unterschiedlichen Lücken.
 
 Ein Plan, der chatgpts Abdeckung mit deepseeks Entscheidungstiefe verbindet,
 wäre stärker als jeder der vier.
 
 ---
 
-## 10. Ausstehend
+## 10. Nicht abgeschlossen
 
-- mistral auf dem Direktweg läuft.
-- Kurze Probe an gemini, ob die fehlende Kennzeile an einer Kürzung oder an der
-  Formatvorgabe liegt.
-- claude benötigt eine Anmeldung durch den Menschen im Fenster von
-  `webagent login --brain claude`.
-- zai ist durch eine deterministische Sperre blockiert.
+- **mistral:** kein Plan. Der Direktweg (32.134 Zeichen) wartete rund neun
+  Minuten hinter dem verwaisten Turn des abgebrochenen Pi-Durchgangs, weil ein
+  abgebrochener Request seinen Browser-Turn und die Brain-Sperre weiter hält
+  (T-946). Danach blieb bis zum Client-Timeout nach 900 s jede Antwort aus. Ob
+  der Bridge-Turn danach noch mit Ergebnis endete, wird unten nachgetragen.
+  Alle drei mistral-Läufe endeten ohne Antwort; die Ursache liegt nach dem
+  Absenden, nicht in der Eingabegröße (52.287 und 32.134 Zeichen gleich).
+- **kimi:** kein Plan. Das Composer-Feld wird unabhängig von der Eingabegröße
+  nicht gefunden.
+- **claude:** kein Plan. Benötigt eine Anmeldung durch den Menschen im Fenster
+  von `webagent login --brain claude`; Anmeldungen werden nicht automatisiert.
+- **zai:** kein Plan. Deterministische Sperre nach erkanntem Sperrbanner.
+
+Die technischen Befunde aus diesen Läufen stehen im Taskboard von
+`webagent-rs` als T-936 bis T-946.

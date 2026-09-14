@@ -79,7 +79,7 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
 | chatgpt | ja, 2.063 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | Durchgang 1: dreimal Composer-Timeout. Durchgang 2: zwei Timeouts, dritter interner Versuch erfolgreich, 275 s; Eingabe vollständig belegt; `results/chatgpt` |
 | gemini | ja, 106 Zeilen | Direktweg, ohne Pi-Systemprompt | Über Pi zweimal früh gekürzte Eingabe mit Rückfrage (siehe 2a). Direktweg: 26 s, Planauftrag angekommen, **Ende der Anweisung durch Eingabegrenze abgeschnitten** (siehe 2b, 2c); `results/gemini` |
 | kimi | nein | Pi; dann Direktweg | Pi-Weg: Composer-Timeout in allen Versuchen beider Durchgänge. Direktweg bei 32.134 Zeichen: ebenfalls Composer-Timeout nach 23 s — das Problem hängt nicht an der Eingabegröße |
-| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; der verwaiste Browser-Turn endete erst 10:44 mit demselben Fehler. Direktweg: Anfrage wartete ab 10:35 hinter diesem Turn (T-946), Client-Timeout nach 900 s ohne Antwort; Ausgang des Bridge-Turns siehe Abschnitt 10 |
+| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; danach liefen **zwei** verwaiste Pi-Turns (je 52.287 Zeichen) bis 10:44:08 und 10:58:35, beide ohne Antwort. Direktweg: **nicht gemessen** — die Anfrage wartete hinter diesen Turns und lief nach 900 s client-seitig ab, bevor sie den Browser erreichte (T-946) |
 | claude | nein | Pi | `session_state=Unbestimmt` in allen vier Versuchen; Seite stand auf Reauth-Login, braucht Anmeldung durch den Menschen im WebView-Fenster |
 | zai | nein | Pi | Sperrbanner erkannt (`blocked`), deterministische Sperre 21.600 s |
 
@@ -312,13 +312,17 @@ wäre stärker als jeder der vier.
 
 ## 10. Nicht abgeschlossen
 
-- **mistral:** kein Plan. Der Direktweg (32.134 Zeichen) wartete rund neun
-  Minuten hinter dem verwaisten Turn des abgebrochenen Pi-Durchgangs, weil ein
-  abgebrochener Request seinen Browser-Turn und die Brain-Sperre weiter hält
-  (T-946). Danach blieb bis zum Client-Timeout nach 900 s jede Antwort aus. Ob
-  der Bridge-Turn danach noch mit Ergebnis endete, wird unten nachgetragen.
-  Alle drei mistral-Läufe endeten ohne Antwort; die Ursache liegt nach dem
-  Absenden, nicht in der Eingabegröße (52.287 und 32.134 Zeichen gleich).
+- **mistral:** kein Plan. Drei Browser-Turns über den Pi-Weg (je 52.287
+  Zeichen) endeten jeweils nach rund 866 s ohne Antwort
+  (`timeout_no_message`). Zwei davon liefen erst, nachdem der Pi-Prozess
+  bereits beendet war: um 10:35:28 gestoppt, Turns bis 10:44:08 und 10:58:35.
+  Eine schon eingereihte Anfrage eines abgebrochenen Aufrufers wird also noch
+  ausgeführt, nicht nur ein laufender Turn zu Ende gebracht (T-946). Die
+  Direktweg-Anfrage mit 32.134 Zeichen stand hinter beiden und lief nach 900 s
+  client-seitig ab, ohne den Browser erreicht zu haben. **Ob mistral bei
+  kürzerer Eingabe antwortet, ist damit nicht gemessen.** Ein früherer Stand
+  dieses Dokuments und meine Meldung an den Auftraggeber nannten den Direktweg
+  fälschlich „ohne Antwort“.
 - **kimi:** kein Plan. Das Composer-Feld wird unabhängig von der Eingabegröße
   nicht gefunden.
 - **claude:** kein Plan. Benötigt eine Anmeldung durch den Menschen im Fenster

@@ -312,7 +312,8 @@ wäre stärker als jeder der vier.
 
 ## 10. Nicht abgeschlossen
 
-- **mistral:** kein Plan. Drei Browser-Turns über den Pi-Weg (je 52.287
+- **mistral:** kein Plan. **Ursache: abgemeldet und Zustimmungsdialog zu den
+  Nutzungsbedingungen, braucht den Menschen** (Details unten). Drei Browser-Turns über den Pi-Weg (je 52.287
   Zeichen) endeten jeweils nach rund 866 s ohne Antwort
   (`timeout_no_message`). Zwei davon liefen erst, nachdem der Pi-Prozess
   bereits beendet war: um 10:35:28 gestoppt, Turns bis 10:44:08 und 10:58:35.
@@ -328,8 +329,17 @@ wäre stärker als jeder der vier.
   `timeout_no_message`. **Das Scheitern ist längenunabhängig und liegt nicht
   an Pi.** In keinem der sechs Läufe sah die Bridge nach dem Senden eine neue
   Nachricht, einen Stop-Button oder eine Textänderung. Ob mistral die Nachricht
-  nicht erhält oder antwortet, ohne dass die Bridge es erkennt, ist aus dem
-  versteckten Fenster heraus nicht zu unterscheiden.
+  nicht erhält oder antwortet, ohne dass die Bridge es erkennt, war aus dem
+  versteckten Fenster heraus zunächst nicht zu unterscheiden.
+  **Ursache um 11:36 per Screenshot (`webagent shot --brain mistral`)
+  belegt:** Die Seite ist abgemeldet (oben rechts „Anmelden" und
+  „Registrieren") und zeigt einen modalen Dialog „Vibe Nutzungsbedingungen"
+  mit dem Knopf „Akzeptieren und fortfahren", der den Composer verdeckt.
+  `webagent doctor` meldete dasselbe Brain gleichzeitig als „healthy" mit
+  `login_state: unknown`. Zustimmen und Anmelden bleiben dem Menschen
+  vorbehalten; mistral ist damit wie claude ein Anmeldefall, kein Fehler der
+  Längen- oder Sendelogik. Die Bridge meldete trotz verdecktem Composer
+  sechsmal erfolgreiches Senden (T-938, T-948).
 - **kimi:** kein Plan. Das Composer-Feld wird unabhängig von der Eingabegröße
   nicht gefunden.
 - **claude:** kein Plan. Benötigt eine Anmeldung durch den Menschen im Fenster

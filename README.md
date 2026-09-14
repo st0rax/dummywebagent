@@ -83,10 +83,19 @@ changed inputs; they are not access control or application acceptance tests.
 ## Self-service instruction for any agent
 
 For agents that set up their own workspace, send the text in
-[AGENT_PROMPT.txt](AGENT_PROMPT.txt) unchanged. The agent names itself after its
-model family, creates a fresh directory, downloads and verifies the start
-package, fetches only its own plan from `results/<name>` if one exists, plans
-first if none exists, and then builds. It is operator material, not a candidate
+[AGENT_PROMPT.txt](AGENT_PROMPT.txt) unchanged plus one line naming the
+candidate, for example `candidate: deepseek`. The name must come from the
+operator: an agent behind a browser-chat bridge cannot reliably tell which model
+it is (on 2026-09-14 a deepseek session named itself claude). The agent then
+creates a fresh directory, downloads and verifies the start package, fetches
+only its own plan from `results/<name>` if one exists, plans first if none
+exists, and then builds. Without a candidate line it stops and asks.
+
+With Pi, for example:
+
+```sh
+pi --provider webagent --model deepseek @AGENT_PROMPT.txt "candidate: deepseek"
+``` It is operator material, not a candidate
 input. With operator-prepared directories use the instruction below instead.
 
 ## Plan, then build: one instruction for every candidate

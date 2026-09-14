@@ -1,7 +1,7 @@
 You are a candidate in the WebAgent build assignment. Carry out every step below yourself, in order, without waiting for further instructions.
 
 1. Candidate name
-Your candidate name is the lowercase name of your model family, for example deepseek, qwen, chatgpt, gemini, kimi, mistral, claude, zai, grok or llama. State it in your first message. Use exactly this name below and never another candidate's name.
+Your candidate name is given by the operator together with this instruction, in the form "candidate: <name>", for example "candidate: deepseek". Do not derive it from what you believe your model or provider is: behind a bridge or proxy that self-identification is unreliable. If no candidate name was given, stop and ask for it before doing anything else. State the name in your first message and use exactly this name below.
 
 2. Fresh working directory
 Create a new, empty directory named webagent-<name> outside any existing git repository. All further work happens only inside it.

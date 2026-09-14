@@ -52,7 +52,7 @@ If the user asks to edit the task package, work on those requested repository
 changes instead of starting the application build. Keep the candidate inputs
 self-contained and free of implementation references or solution instructions.
 If either input changes, update the packaged copies and their revision together.
-README, this entry file, preparation tooling and EVALUATION.md are operator-side
+README, this entry file, AGENT_PROMPT.txt, preparation tooling and EVALUATION.md are operator-side
 material; they are not additional candidate inputs or product requirements.
 
 Candidate output — plans, implementations, reports, evidence — belongs on a

@@ -1,0 +1,40 @@
+You are a candidate in the WebAgent build assignment. Carry out every step below yourself, in order, without waiting for further instructions.
+
+1. Candidate name
+Your candidate name is the lowercase name of your model family, for example deepseek, qwen, chatgpt, gemini, kimi, mistral, claude, zai, grok or llama. State it in your first message. Use exactly this name below and never another candidate's name.
+
+2. Fresh working directory
+Create a new, empty directory named webagent-<name> outside any existing git repository. All further work happens only inside it.
+
+3. Task inputs
+Download https://github.com/st0rax/dummywebagent/raw/main/webagent-agent-start-v2.2.zip and extract only SPEC.md and prompt.txt into the working directory. Verify their SHA-256 hashes:
+SPEC.md    4c459afcc7b36ed505f3e0352432942a76b17df0400b57c6639bc4609cc16c5e
+prompt.txt e6cc79a3fba07b216eb72874687db2a8727fe943242a8d760fc850da89d67274
+If a hash differs, stop and report it. Keep both files byte-identical from now on.
+
+4. Your own plan, if one exists
+Download exactly https://raw.githubusercontent.com/st0rax/dummywebagent/results/<name>/<name>.plan.md with your candidate name inserted.
+- HTTP 200: save it as PLAN.md in the working directory. It is the plan you wrote in an earlier session for this exact assignment.
+- HTTP 404: there is no plan. Do not look for one anywhere else.
+These two downloads are the only permitted access to that repository. Do not clone, fetch or browse it, its history or any of its branches, and do not read other candidates' plans, code or reports.
+
+5. Plan
+Read SPEC.md and prompt.txt completely.
+- If PLAN.md exists, use it as your starting point.
+- If PLAN.md does not exist, write your own implementation plan to PLAN.md before writing any code: architecture decisions with reasons, dependencies, implementation phases, test strategy, risks, and a mapping of all 13 acceptance groups and all 20 protocol cases to the planned evidence.
+In both cases SPEC.md wins over PLAN.md. Record every deviation from the plan and every decision the plan left open, with its reason, in PLAN.md under "Deviations".
+
+6. Build
+Carry out prompt.txt completely in the working directory. The plan is not the result.
+- Public language, library and protocol documentation and normal package dependencies are allowed.
+- Do not push, publish or change accounts. Logins are done by the human; report every step that needs one and continue with independent work.
+
+7. Delivery
+- Source, tests and runnable instructions.
+- README with a "Not yet proven" section.
+- ACCEPTANCE.md with concrete evidence for all 13 acceptance groups and all 20 protocol cases: the command run, its output or artifact path, and PASS, FAIL or BLOCKED with the reason.
+- The gates from SPEC.md must actually be run, not just described: cargo fmt --check, cargo clippy in both variants, cargo test, the browser-free build and the full build.
+- Measured resource use including browser and helper processes.
+- A final report naming your candidate name, whether PLAN.md was downloaded or written, the input hashes, and the absolute path of the working directory.
+
+Do not stop after scaffolding or a partial phase. Continue until every feasible part is implemented and checked. A mock result is not evidence that a live provider works. Report failures and limitations honestly instead of weakening a requirement.

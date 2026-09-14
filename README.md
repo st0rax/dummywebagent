@@ -80,6 +80,15 @@ Additional generated project files are expected and ignored by this check.
 Compare against the operator's unchanged assignment checkout. Hashes detect
 changed inputs; they are not access control or application acceptance tests.
 
+## Self-service instruction for any agent
+
+For agents that set up their own workspace, send the text in
+[AGENT_PROMPT.txt](AGENT_PROMPT.txt) unchanged. The agent names itself after its
+model family, creates a fresh directory, downloads and verifies the start
+package, fetches only its own plan from `results/<name>` if one exists, plans
+first if none exists, and then builds. It is operator material, not a candidate
+input. With operator-prepared directories use the instruction below instead.
+
 ## Plan, then build: one instruction for every candidate
 
 Every candidate gets the same instruction. It decides on its own which phase

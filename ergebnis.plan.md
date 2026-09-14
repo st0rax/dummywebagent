@@ -54,9 +54,10 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
    Anweisungskonflikt getrennt (siehe 2c). Beide frühen Zwischenurteile —
    „Formatvorgabe übergangen" und „nur Anweisungskonflikt" — waren falsch.
 7. **Operatorentscheidung: zweiter Durchgang für mistral abgebrochen.** Der
-   Pi-Weg hätte bis zu 20 Minuten gebunden, ohne einen Fehler nach dem Absenden
-   aufzuklären; mistral erhielt stattdessen den Direktweg. Der abgebrochene
-   Browser-Turn lief in der Bridge noch knapp neun Minuten weiter (T-946).
+   Pi-Weg hätte bis zu 20 Minuten gebunden, ohne das Ausbleiben der Antwort
+   aufzuklären; mistral erhielt stattdessen den Direktweg. Die Bridge arbeitete
+   danach noch drei Anfragen des beendeten Pi-Prozesses ab, bis 11:12, und
+   blockierte mistral so bis zu einem Neustart (T-946).
 8. **Selbstblockade durch den Circuit-Breaker.** Pis interne Wiederholungen
    lassen den Breaker innerhalb eines einzelnen Versuchs zuschnappen. Danach
    laufen die restlichen Wiederholungen gegen `circuit_open`, ohne den Browser zu

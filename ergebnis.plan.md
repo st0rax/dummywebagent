@@ -79,7 +79,7 @@ kein Leser die Tabellen unten für kontrollierte Messungen hält.
 | chatgpt | ja, 2.063 Zeilen | Pi, nur `SPEC.md` + `prompt.txt` | Durchgang 1: dreimal Composer-Timeout. Durchgang 2: zwei Timeouts, dritter interner Versuch erfolgreich, 275 s; Eingabe vollständig belegt; `results/chatgpt` |
 | gemini | ja, 106 Zeilen | Direktweg, ohne Pi-Systemprompt | Über Pi zweimal früh gekürzte Eingabe mit Rückfrage (siehe 2a). Direktweg: 26 s, Planauftrag angekommen, **Ende der Anweisung durch Eingabegrenze abgeschnitten** (siehe 2b, 2c); `results/gemini` |
 | kimi | nein | Pi; dann Direktweg | Pi-Weg: Composer-Timeout in allen Versuchen beider Durchgänge. Direktweg bei 32.134 Zeichen: ebenfalls Composer-Timeout nach 23 s — das Problem hängt nicht an der Eingabegröße |
-| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; danach liefen **zwei** verwaiste Pi-Turns (je 52.287 Zeichen) bis 10:44:08 und 10:58:35, beide ohne Antwort. Direktweg: **nicht gemessen** — die Anfrage wartete hinter diesen Turns und lief nach 900 s client-seitig ab, bevor sie den Browser erreichte (T-946) |
+| mistral | nein | Pi; dann Direktweg | Pi-Weg Durchgang 1: Text ging raus, keine Antwort (`timeout_no_message`, Renderer reagiert nach Wake nicht), 865 s. Durchgang 2 vom Operator abgebrochen; danach liefen **zwei** verwaiste Pi-Turns (je 52.287 Zeichen) bis 10:44:08 und 10:58:35, beide ohne Antwort. Erster Direktweg nicht gemessen — die Anfrage wartete hinter diesen Turns und lief ab, bevor sie den Browser erreichte (T-946). Nach Neustart der Bridge zweiter Direktweg 11:14: 32.134 Zeichen, nach 856 s ebenfalls `timeout_no_message` ohne Antwort |
 | claude | nein | Pi | `session_state=Unbestimmt` in allen vier Versuchen; Seite stand auf Reauth-Login, braucht Anmeldung durch den Menschen im WebView-Fenster |
 | zai | nein | Pi | Sperrbanner erkannt (`blocked`), deterministische Sperre 21.600 s |
 
@@ -319,10 +319,13 @@ wäre stärker als jeder der vier.
   Eine schon eingereihte Anfrage eines abgebrochenen Aufrufers wird also noch
   ausgeführt, nicht nur ein laufender Turn zu Ende gebracht (T-946). Die
   Direktweg-Anfrage mit 32.134 Zeichen stand hinter beiden und lief nach 900 s
-  client-seitig ab, ohne den Browser erreicht zu haben. **Ob mistral bei
-  kürzerer Eingabe antwortet, ist damit nicht gemessen.** Ein früherer Stand
-  dieses Dokuments und meine Meldung an den Auftraggeber nannten den Direktweg
-  fälschlich „ohne Antwort“.
+  client-seitig ab, ohne den Browser erreicht zu haben. Ein früherer Stand
+  dieses Dokuments nannte diesen ersten Direktweg fälschlich „ohne Antwort“.
+  Nach einem Neustart der Bridge, der die Warteschlange leerte, lief der
+  Direktweg um 11:14 tatsächlich: 32.134 Zeichen, ohne Pi-Systemprompt, nach
+  856 s derselbe Fehler. Das Scheitern hängt damit weder an Pi noch am
+  Unterschied zwischen 52.287 und 32.134 Zeichen. Eine Kontrolle mit 77
+  Zeichen läuft, um Länge ganz auszuschließen.
 - **kimi:** kein Plan. Das Composer-Feld wird unabhängig von der Eingabegröße
   nicht gefunden.
 - **claude:** kein Plan. Benötigt eine Anmeldung durch den Menschen im Fenster

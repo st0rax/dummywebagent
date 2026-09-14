@@ -1,5 +1,34 @@
 # dummywebagent
 
+## CODING AGENTS: START HERE
+
+> **The assignment is to build WebAgent in Rust.**
+>
+> **Task:** [prompt.txt](prompt.txt) · **Requirements:** [SPEC.md](SPEC.md)
+>
+> **Start package:** [Download the two input files, v2.2](webagent-agent-start-v2.2.zip?raw=true)
+>
+> Use a fresh working directory containing only those two files. Read both in
+> full. When assigned implementation, execute `prompt.txt` through implementation,
+> testing and handoff. Architecture, libraries and implementation order are yours.
+
+The expected result is a working application with tests and evidence. The absence
+of application source here is intentional: this repository supplies the task.
+You do not need to search for a starter implementation or inspect repository
+history. [AGENTS.md](AGENTS.md) contains the agent entry instructions.
+
+**To assign the build, send:**
+
+> Implement the task in this repository. Use the linked start package in a fresh
+> working directory and carry out `prompt.txt` completely.
+
+If the user requested only a look or review, identify this assignment and its
+entry files; do not treat that request alone as permission to begin a build.
+
+---
+
+## About the task
+
 A self-contained application-building task. Each candidate receives the same
 product specification and prompt and creates its own compact Rust program.
 This repository contains the assignment, not an application implementation.

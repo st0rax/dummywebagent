@@ -3,3 +3,4 @@
 /profiles/
 *.exe
 *.pdb
+__pycache__/

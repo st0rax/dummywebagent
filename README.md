@@ -1,71 +1,89 @@
 # dummywebagent
 
-An agent benchmark in the shape of the MorphCook one: a single spec, one folder
-per model, every model builds the same program from nothing.
+A self-contained application-building task. Each candidate receives the same
+product specification and prompt and creates its own compact Rust program.
+This repository contains the assignment, not an application implementation.
 
-The program is a local agent whose brain is a logged-in browser chat, fronted by
-an OpenAI-compatible endpoint on loopback and a messenger web UI.
+The desired application exposes logged-in browser chats through a local text
+inference API, a messenger and a coding CLI. The specification defines external
+behavior and acceptance criteria. Architecture, libraries, file structure,
+algorithms, build order and visual design belong to the implementing agent.
 
-## Setup
+## Start a candidate
 
+Use Python 3.10+ to create a new, otherwise empty candidate directory:
+
+```sh
+python prepare.py ../candidate-a
 ```
-dummywebagent/
-├── SPEC.md
-├── prompt.txt
-├── claude-opus-5/      SPEC.md  prompt.txt   (copies)
-├── gpt-5.6/            SPEC.md  prompt.txt
-└── …
+
+This copies **only `SPEC.md` and `prompt.txt`**. It does not copy source, helper
+scripts, operator instructions, `.git`, history, remotes or other candidates.
+The destination must not exist; existing directories are never overwritten.
+The command prints SHA-256 hashes of the two input files for the operator's log.
+
+Open that directory as a fresh agent workspace and send the contents of
+`prompt.txt` as its instruction. Start a fresh conversation with no inherited
+project memory, source attachments or references to other implementations.
+Avoid exposing this repository or sibling candidates through the agent's search
+roots. An output directory alone does not restrict an agent's filesystem access;
+configure its workspace/sandbox accordingly.
+
+The only candidate inputs are:
+
+```text
+SPEC.md
+prompt.txt
 ```
 
-Copy `SPEC.md` and `prompt.txt` into an empty folder per model, start the agent
-in that folder with the contents of `prompt.txt` as its only instruction, and
-let it run to completion. The folder boundary is the point: escaping it is a
-scored failure, not an accident.
+To verify that a candidate still has exactly the original input bytes:
 
-## What it measures
+```sh
+python prepare.py --check ../candidate-a
+```
 
-Unlike a Flutter app, nothing here can be faked by a screenshot. The spec is
-built so that a plausible-looking result and a working result are separable by
-running commands:
+Additional generated project files are expected and ignored by this check.
+Compare against the operator's unchanged assignment checkout. Hashes detect
+changed inputs; they are not access control or application acceptance tests.
 
-- **Strict parsing.** The conformance table in the spec is 20 vectors. Each one
-  is a named test or it is missing. Models that write permissive parsers fail
-  visibly.
-- **A state machine with budgets.** Cycle limits, wall clock, loop detection and
-  action de-duplication all have observable trip conditions.
-- **Transactional file edits.** `edit_batch` either leaves the file untouched on
-  a mid-batch failure or it does not.
-- **Security boundaries.** Workspace escape via absolute path, `..` and symlink;
-  audit-before-execution ordering.
-- **A hand-written HTTP server that has to match someone else's wire format.**
-  The OpenAI and Anthropic shapes are not negotiable — an integration test
-  drives them over a real loopback socket. Streaming frames, `[DONE]`, `401`,
-  `403` on `Origin`, `404` on unknown model, `429` back-pressure.
-- **Failing closed.** `seed`, `tools` and `n > 1` must be rejected with `400`,
-  not accepted and quietly ignored. This is the single most tempting shortcut in
-  the spec and it is directly testable.
-- **Not lying in the response body.** `usage` counts are unknowable through a
-  browser UI, so they must be present and zero. A model that invents plausible
-  token counts fails on inspection, not on a test.
-- **A UI that escapes untrusted text.** The assistant's output goes into the
-  DOM. Feeding `<img src=x onerror=…>` through the renderer is a gate.
-- **Testability as architecture.** The whole agent loop *and* the whole endpoint
-  must run against a mock backend with no outbound network. A model that couples
-  either to the browser cannot satisfy this and cannot hide it.
-- **Restraint.** The dependency budget forbids a web framework, an HTTP client,
-  a schema framework and a headless-browser crate. Reaching for `axum` or
-  `reqwest` is a finding.
+## Environment
 
-## Scoring
+Supply the same available tools and limits to candidates you intend to compare.
+Record the agent/model, input hashes, host OS, tool versions, budget, permissions,
+network access, and any manual intervention. Preinstall the Rust toolchain and
+host build prerequisites, or allow their documented setup before timing a run.
+Choose whether dependency caches outside the workspace are writable and approve
+that consistently; the prompt permits only operator-approved cache writes.
 
-The gates in `SPEC.md` § *Acceptance gates* are the rubric — thirteen binary
-checks, runnable. Suggested secondary axes: lines of code (lower is better at
-equal gate coverage), number of dependencies beyond the budget, and whether the
-README's "not yet proven" section is honest about what the tests do not cover.
+Language/library/protocol documentation and package dependencies are permitted.
+Existing application implementations and other candidate solutions are not.
+Account login is done by the human. A provider account is not needed to implement
+and verify the browser-free behavior. Missing credentials do not justify stopping
+all independent work, and mocked behavior cannot prove a live provider works.
 
-## Origin
+## Evaluate a result
 
-Derived from [st0rax/webagent-rs](https://github.com/st0rax/webagent-rs), which
-is the real, much larger project. The spec here is a deliberately reduced v1 —
-multi-brain swarm, the benchmark harness, the autoresearch loop and the TUI are
-cut entirely, so that one agent run can plausibly finish.
+Use [EVALUATION.md](EVALUATION.md) as the operator's checklist. Do not send it as
+an additional implementation prompt. All required product behavior is already
+in [SPEC.md](SPEC.md); there are no hidden product requirements.
+
+The 13 acceptance groups and 20 protocol cases require evidence. Implementation
+size, number of concepts and ease of understanding are additional review axes
+after checking behavior. There is no reward for test-count padding, compressed
+code or omitted requirements. Record production code, tests, assets and
+dependencies separately.
+
+This repository does not contain an independent executable acceptance suite.
+Candidate-authored passing tests are claims to inspect and rerun, not independent
+certification. Live provider evidence is separate from offline acceptance.
+
+## Assignment revision
+
+Revision 2.0 is an outcome-based assignment. It contains no source references,
+architecture diagram, trait definitions, prescribed module tree, dependency
+allowlist, implementation sequence or test-count target. Wire-format examples
+and CLI names specify observable interfaces, not an internal solution.
+
+The bootstrap authentication/origin rules, complete Messages event sequence,
+request isolation, repeated-action behavior and evidence rules are explicit so
+that candidates can be evaluated against the same contract.

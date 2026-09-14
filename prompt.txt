@@ -1,1 +1,11 @@
-Implement the Rust program defined in SPEC.md 100% complete. Do create the messenger look and feel for the web UI yourself. You may NOT touch any files outside this folder!
+Build the complete application described in SPEC.md in this working directory.
+
+Read the entire specification. It is the sole product requirement. Optimize for a compact, readable, maintainable result with the specified behavior. Choose the architecture, dependencies, algorithms, code organization, implementation order and visual design yourself.
+
+Create your own implementation. Do not search for or consult an existing implementation of this application, another candidate's solution, repository history or source outside this directory. Public language, library and protocol documentation and normal package dependencies may be used. Do not infer additional features or compatibility requirements.
+
+Keep SPEC.md and this prompt unchanged. Create and edit project files only inside this directory. Existing installed tools may be used; any tool-managed writes outside this directory must be limited to operator-approved build/package caches. Do not change global configuration, unrelated projects or account settings. Do not push, deploy or publish the result. If the environment prevents a required operation, record the limitation and continue independent work.
+
+Implement and verify the result. Do not weaken requirements, add stubs disguised as working behavior, or substitute mock success for real-provider evidence. Continue until the feasible implementation and checks are complete. Human login and unavailable platform checks must be reported honestly.
+
+Deliver the source, tests, runnable application instructions, README with Not yet proven, and ACCEPTANCE.md with evidence for every acceptance group and protocol case. State the tested platforms, commands, failures and remaining limitations. Choose your own working process; no plan or architecture is supplied.

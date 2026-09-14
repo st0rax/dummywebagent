@@ -333,4 +333,6 @@ wäre stärker als jeder der vier.
 - **zai:** kein Plan. Deterministische Sperre nach erkanntem Sperrbanner.
 
 Die technischen Befunde aus diesen Läufen stehen im Taskboard von
-`webagent-rs` als T-936 bis T-946.
+`webagent-rs` als T-936 bis T-947. T-947 stammt aus den mistral-Läufen: jede
+der fünf Anfragen lief dreimal das Turn-Budget von 270 s, weil der Relay nach
+einem stummen Turn den kompletten Prompt in einem neuen Chat erneut sendet.

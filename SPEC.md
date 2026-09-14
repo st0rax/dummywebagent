@@ -14,18 +14,29 @@ agent's economics change with it. The intelligence is rented through a meter.
 
 WebAgent inverts that. The **brain is a browser tab you are already logged into**.
 ChatGPT, Claude, Gemini, DeepSeek, Kimi, Qwen, Mistral, Z.ai — whatever
-subscription you already pay for, whatever free tier you already have. The agent
-drives the chat interface the way a human does: type into the composer, press
-send, wait for the stream to settle, read the answer back out of the DOM. No API
-key is ever requested. No credential is ever typed by the program. No token is
-ever billed twice.
+subscription you already pay for, whatever free tier you already have. The
+program drives the chat interface the way a human does: type into the composer,
+press send, wait for the stream to settle, read the answer back out of the DOM.
+No API key is ever requested. No credential is ever typed by the program.
 
-The chat plans. The local machine acts. Observations flow back into the chat.
+And then it puts an **OpenAI-compatible endpoint on localhost in front of it**.
+
+That is the payoff. The agent loop is not the product — the endpoint is. Point
+whatever harness you already use at `http://127.0.0.1:8788/v1` and it talks to
+the chat you are logged into, as if it were an API. Anyone who wants a different
+loop brings their own.
+
+The same listener also serves a **messenger**: open
+`http://127.0.0.1:8788/` and you get a plain chat window — thread, bubbles,
+composer, a picker for which brain answers. It is a client of the same endpoint
+and has no privileges the endpoint does not have. It exists because a person
+should be able to use this without writing a curl command, and because the
+fastest way to tell whether a provider still works is to talk to it.
 
 The user never sees the machinery. No "adapting response format." No "retrying
-malformed JSON." They see a task go in and a working diff come out. The
-machinery is invisible — and when it fails, it fails loudly and on the record,
-never silently.
+malformed JSON." A request goes in and an answer comes out. The machinery is
+invisible — and when it fails, it fails loudly and on the record, never
+silently.
 
 **Core belief:** the planning intelligence a person already has access to should
 be usable as a tool, not only as a chat window.
@@ -37,17 +48,17 @@ be usable as a tool, not only as a chat window.
 **A brain is a single function: `send(&str) -> Result<String>`.**
 
 That is the whole contract. Everything above that line — the planning loop, tool
-execution, the safety policy, persistence, resume, the web UI — is
+execution, the safety policy, persistence, resume, the HTTP surface — is
 provider-free. Everything below it is a per-provider adapter consisting of
 **one JSON file of CSS selectors and nothing else**.
 
 Two consequences, both load-bearing:
 
-1. **The entire agent is testable with zero network access.** Substitute a
-   scripted mock backend that returns canned protocol responses and the full
-   plan/act/observe loop runs deterministically in a unit test.
-   `cargo test --no-default-features` must exercise the complete loop end to end
-   without compiling a browser, without opening a window, without a socket.
+1. **The entire system is testable with no outbound network.** Substitute a
+   scripted mock backend that returns canned replies and the full plan/act/
+   observe loop — and the full HTTP surface — run deterministically in tests.
+   `cargo test --no-default-features` must exercise both end to end without
+   compiling a browser and without opening a window.
    This is not a testing convenience — it is the architecture.
 
 2. **Adding a provider is adding a file.** `selectors/<id>.json` plus one line
@@ -88,19 +99,23 @@ evidence. `webagent doctor` may never report a rung it cannot cite a record for.
 ### In
 
 - **Platforms:** Windows and Linux, x86_64. One Rust binary, `webagent`.
-- **Offline core.** The core crate makes no outbound network calls of its own.
-  The only network traffic in the product is the embedded browser loading the
-  provider's own website.
 - **No API keys, ever.** The program never prompts for, reads, or stores a
   provider credential. Login is the human typing into a visible browser window;
   the program only polls for the logged-in state.
 - **Providers at launch:** `chatgpt`, `claude`, `gemini`, `deepseek`, `kimi`,
   `qwen`, `mistral`, `zai`. Eight selector files, no provider-specific Rust.
+- **Local inference endpoint** — `webagent api serve`. OpenAI Chat Completions
+  and Anthropic Messages adapters over loopback, bearer-token protected,
+  streaming and non-streaming. This is the headline feature; see its own
+  section for the binding wire contract.
+- **Messenger web UI** on the same listener at `/`. A classic chat interface —
+  thread of bubbles, composer at the bottom, brain picker — implemented as a
+  client of `/v1`. Embedded in the binary, no build step. See its own section.
 - **`webagent/1` action protocol** — strict, hand-rolled parser, no schema
   framework, no extra dependency. Full grammar and conformance vectors below.
 - **Autonomous controller** — plan/act/observe state machine with cycle budget,
   wall-clock budget, loop detection, action de-duplication, protocol repair, and
-  resume by run id.
+  resume by run id. Drives the CLI and REPL. **Not** in the API path.
 - **Tools:** `shell`, `edit`, `edit_batch`, `write`, `message`, `message_part`,
   `finish`. File actions are executed natively, never through the shell, so
   quoting and escaping can never corrupt a file.
@@ -110,24 +125,25 @@ evidence. `webagent doctor` may never report a rung it cannot cite a record for.
 - **Shell policy.** A denylist of known-destructive patterns plus an optional
   strict mode that inverts to an allowlist of read-only prefixes. Every
   execution is appended to an audit log before it runs.
-- **Persistence.** Run metadata, JSON-Lines transcript, JSON-Lines event stream,
+- **Persistence.** Run metadata, JSON-Lines transcript, JSON-Lines event log,
   long-term memory. A killed process leaves a resumable run on disk.
 - **Embedded browser backend** behind an optional cargo feature (`webview`),
   using WebView2 on Windows and WebKitGTK on Linux through `wry`/`tao`.
-- **Local web UI**, the default surface. `webagent` with no subcommand serves
-  `http://127.0.0.1:8788/` and opens it: brain health sidebar, session
-  create/switch, live event stream, capability matrix, doctor report.
-- **REPL**, line-oriented, sharing one slash-command parser with the web UI.
-- **CLI** as specified in the command surface section.
-- **Diagnostics:** `doctor`, `diagnose`, `health` — each printing the evidence
-  rung it can actually justify.
+- **CLI and REPL** — the two interactive surfaces. The REPL is line-oriented and
+  shares the CLI's slash-command parser.
+- **Diagnostics:** `doctor` and `diagnose`, each printing the evidence rung it
+  can actually justify.
 
-### Out (explicitly, for v1)
+### Out (explicitly)
 
-- Any OpenAI- or Anthropic-compatible HTTP bridge. Deferred.
-- Multi-brain swarm, worker pools, cross-brain handoff, vote synthesis.
-- The benchmark harness and autoresearch loop.
-- Terminal UI / dashboard / window tiling.
+- **A dashboard.** The web UI is a messenger, not an operations console. No
+  charts, no capability matrix, no run inspector, no log viewer. Those live in
+  `doctor --json` and `runs --json`.
+- **Terminal UI, window tiling. Not planned.**
+- **Multi-brain swarm, worker pools, cross-brain handoff, vote synthesis. Not
+  planned** — one run drives exactly one brain, one request hits exactly one
+  brain.
+- **Benchmark harness, self-improvement and autoresearch loops. Not planned.**
 - Android, macOS, ARM targets.
 - Headless Chromium, CDP, Playwright, Selenium, or any driver binary. The
   embedded WebView is the only browser.
@@ -140,26 +156,44 @@ evidence. `webagent doctor` may never report a rung it cannot cite a record for.
 
 ## Architecture
 
+There are **two paths through the system** and they must not be confused. The
+distinction is the most commonly botched part of this design.
+
 ```
-CLI  /  REPL  /  Web UI
-            │
-            ▼
-     AgentController          ◀── run budget, loop guard, circuit breaker
-     plan → act → observe
-        │            │
-        ▼            ▼
-   BrainBackend   Tool layer
-   (trait)        shell · edit · edit_batch · write
-        │            │
-        ▼            ▼
-   WebBrainBackend  Workspace (bound directory)
-        │
-        ▼
-   Embedded WebView  ──▶  provider website
+   CLI / REPL              any harness  ·  messenger web UI
+        │                                      │
+        ▼                                      ▼
+ AgentController                        ApiServer (loopback)
+ plan → act → observe                   OpenAI + Anthropic adapters
+                                        + static UI assets at /
+        │          │                           │
+        │          ▼                           │
+        │     Tool layer                       │   no controller,
+        │     shell · edit · write             │   no tools, no shell
+        │          │                           │
+        │          ▼                           │
+        │     Workspace (bound dir)            │
+        │                                      │
+        └──────────────┬───────────────────────┘
+                       ▼
+                 BrainBackend  (trait)
+                       │
+              ┌────────┴────────┐
+              ▼                 ▼
+      MockBrainBackend    WebBrainBackend
+                                │
+                                ▼
+                      Embedded WebView ──▶ provider website
 
 Cross-cutting: RunStore · Transcript · Memory · Audit · Timeouts ·
                LoopGuard · CapabilityProof
 ```
+
+**The API path executes exactly one browser turn and nothing else.** It does not
+start a controller, does not parse `webagent/1`, does not touch the filesystem,
+and can never run a shell command. A request in, a completion out. The agent
+loop lives in whatever harness called it. Any code path that lets an HTTP
+request reach the tool layer is a security defect, not a feature.
 
 Dependency direction is one-way and must not be violated:
 
@@ -168,8 +202,8 @@ Dependency direction is one-way and must not be violated:
 3. `controller` drives a long-lived run. Depends on `protocol`, `brain`, tools.
 4. `executor` and `file_actions` act inside the bound workspace.
 5. `run_store` and `transcript` hold state for diagnosis and resume.
-6. Surfaces (CLI, REPL, web UI) depend on everything below and are depended on
-   by nothing.
+6. Surfaces (CLI, REPL, `api`) depend on layers below and are depended on by
+   nothing. `api` depends on `brain` only — never on `controller` or the tools.
 
 A module in a lower layer that needs to reach upward is a design error, not a
 case for a callback.
@@ -179,20 +213,259 @@ case for a callback.
 The core must build without a C toolchain, without MSVC, and without system
 OpenSSL. Permitted crates: `serde`, `serde_json`, `regex`, `clap`, `time` (or
 `chrono`), `sha2`, and a lock-file crate. The `webview` feature may add `wry`
-and `tao` plus the platform bindings they require. An async runtime is permitted
-only if the web UI needs it; a blocking single-threaded HTTP server written by
-hand is an acceptable and preferred alternative.
+and `tao` plus the platform bindings they require.
 
-**No HTTP client crate. No headless-browser crate. No schema-validation crate.**
-The protocol validator is hand-written — that is part of what is being measured.
+**The HTTP server is hand-written** — HTTP/1.1, loopback, plaintext. A blocking
+thread-per-connection server with a small accept loop is sufficient and is the
+expected shape; an async runtime is permitted but is not worth its weight here.
+
+**No web framework. No HTTP client crate. No TLS. No headless-browser crate. No
+schema-validation crate.** The protocol validator and the HTTP server are both
+hand-written — that is part of what is being measured.
+
+---
+
+## Local inference endpoint
+
+`webagent api serve` is the product's main surface. It turns a logged-in browser
+chat into something any existing tool can call.
+
+```
+webagent api serve [--bind 127.0.0.1] [--port 8788] [--brain <id>]
+                   [--api-key-env WEBAGENT_API_KEY] [--headless]
+                   [--timeout-secs <s>] [--max-queue <n>]
+```
+
+### Binding and authentication
+
+- **Loopback only.** A `--bind` value that does not resolve to a loopback
+  address is refused **at startup** with exit code 2. Not warned about — refused.
+- **Bearer token required on every request.** The token is read from the
+  environment variable named by `--api-key-env` (default `WEBAGENT_API_KEY`). If
+  that variable is unset or empty, the server generates a random token, prints it
+  once to stderr, and uses it. A missing or wrong token is `401` with a JSON
+  error body. There is no unauthenticated mode, not even on loopback.
+- Requests carrying an `Origin` header are rejected with `403`. Browsers must not
+  be able to reach this from a page the user happened to open.
+
+### Models
+
+`GET /v1/models` returns the OpenAI model-list shape. One entry per brain that
+has a selector file, plus the alias `webagent` bound to `--brain`:
+
+```json
+{ "object": "list", "data": [
+  { "id": "webagent", "object": "model", "created": 0, "owned_by": "webagent" },
+  { "id": "chatgpt",  "object": "model", "created": 0, "owned_by": "webagent" }
+] }
+```
+
+The `model` field of a request selects the brain. An unknown model is `404` with
+a named error, never a silent fallback to the default.
+
+### `POST /v1/chat/completions`
+
+The whole `messages` array is flattened into one prompt and sent as a single
+browser turn. Roles are rendered as labelled blocks; a `system` message becomes a
+leading instruction block. Conversation continuity across requests is **not**
+maintained — each request is a fresh turn. Say so in the README; a harness that
+assumes server-side memory will otherwise corrupt its own context silently.
+
+Non-streaming response:
+
+```json
+{
+  "id": "chatcmpl-<run id>",
+  "object": "chat.completion",
+  "created": 1757800000,
+  "model": "chatgpt",
+  "choices": [{
+    "index": 0,
+    "message": { "role": "assistant", "content": "…" },
+    "finish_reason": "stop"
+  }],
+  "usage": { "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0 }
+}
+```
+
+`usage` counts are not measurable through a browser UI. They must be present and
+zero — never invented. The README states this.
+
+With `"stream": true`, respond `Content-Type: text/event-stream` and emit:
+
+- one or more `data: {…"object":"chat.completion.chunk"…}` frames whose
+  `choices[0].delta` carries `{"role":"assistant"}` first and then `{"content":"…"}`,
+- a final frame with `"finish_reason":"stop"` and an empty delta,
+- then literally `data: [DONE]\n\n`.
+
+Each frame is one `data:` line followed by a blank line. Because the browser is
+read after the answer settles, chunking is synthetic: split the finished text
+into frames rather than pretending to stream token by token. Do not fake
+inter-token delays.
+
+### Fail closed on unsupported parameters
+
+A parameter that the browser path cannot honour must be **rejected with `400`**
+and a named error, never accepted and ignored. Silently dropping `seed` is worse
+than refusing it, because the caller believes it got determinism.
+
+| Parameter | Behaviour |
+|---|---|
+| `seed` | `400 unsupported_parameter` |
+| `tools`, `functions`, `tool_choice` | `400 unsupported_parameter` |
+| `n` > 1 | `400 unsupported_parameter` |
+| `logprobs`, `top_logprobs` | `400 unsupported_parameter` |
+| `response_format` | `400 unsupported_parameter` |
+| `temperature`, `top_p`, `max_tokens` | accepted and ignored; documented as ignored |
+| `stop` | accepted and ignored; documented as ignored |
+
+### `POST /v1/messages` — Anthropic adapter
+
+The same single-turn semantics behind the Anthropic Messages shape, so that
+harnesses speaking that dialect work unchanged: `system` as a top-level string,
+`content` blocks of `{"type":"text","text":…}`, response
+`{"id","type":"message","role":"assistant","content":[…],"stop_reason":"end_turn","usage":{…}}`.
+Streaming uses the `message_start` / `content_block_delta` / `message_stop`
+event sequence with `event:` lines alongside `data:` lines.
+
+### Serialisation and back-pressure
+
+One browser tab is a serial resource. Requests are queued and executed strictly
+one at a time.
+
+- Queue depth beyond `--max-queue` (default 8) → `429` with `Retry-After`.
+- A turn exceeding `--timeout-secs` → `504` with a named error, and the tab is
+  returned to a clean state before the next request.
+- A rate-limit banner detected in the provider UI → `429`, with a body that says
+  the **provider** refused, distinct from the local queue's `429`.
+- A brain that is not logged in → `503` naming the brain and the login command.
+
+### Health
+
+`GET /healthz` returns `200` and `{"ok":true,"brain":"<id>","queue":<n>}` with no
+authentication, so a supervisor can probe it. It must expose nothing else.
+
+---
+
+## Messenger web UI
+
+`GET /` serves a single page from assets embedded in the binary at compile time.
+No build step, no npm, no framework, no CDN, no web fonts. Hand-written
+HTML/CSS/JS.
+
+**It is a client of `/v1` and nothing more.** It calls the same endpoints an
+external harness calls, with the same bearer token, and has no privileged route
+of its own. If a feature cannot be built on `/v1`, it does not belong in the UI.
+
+### Shape
+
+A classic messenger. One conversation visible at a time, filling the window.
+
+```
+┌──────────────────────────────────────────────┐
+│  webagent          [ claude  ▾ ]      + new  │   thin top bar
+├──────────────────────────────────────────────┤
+│                                              │
+│                        ┌───────────────────┐ │
+│                        │ what's in this    │ │   user: filled bubble,
+│                        │ repo?             │ │   right-aligned
+│                        └───────────────────┘ │
+│                                              │
+│  It's a Rust port of a browser-driven        │   assistant: full width,
+│  agent. The core modules are…                │   no bubble, so code and
+│                                              │   lists stay readable
+│  ```rust                                     │
+│  pub trait BrainBackend { … }        [copy]  │
+│  ```                                         │
+│                                              │
+├──────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────┐ │
+│ │ Message…                          [ ↑ ]  │ │   composer pinned bottom
+│ └──────────────────────────────────────────┘ │
+└──────────────────────────────────────────────┘
+```
+
+- **User turns** are a filled bubble, right-aligned, max ~80% width.
+- **Assistant turns** are full-width plain text with no bubble. This is
+  deliberate: wrapping long code in a rounded bubble makes it unreadable.
+- **Composer** is a textarea that grows with its content up to ~8 rows then
+  scrolls. **Enter sends, Shift+Enter inserts a newline.** While a turn is in
+  flight the send button becomes a stop button and the textarea stays editable.
+- **Brain picker** in the top bar, populated from `GET /v1/models`. Changing it
+  changes which model id the next request carries; it does not clear the thread.
+- **New** starts an empty thread.
+
+### Conversation state
+
+The endpoint is stateless, so the **browser owns the conversation**. The page
+keeps the message array and re-sends the whole thread on every turn. Threads
+persist in `localStorage` so a reload does not lose the conversation; every read
+and write of it is wrapped in try/catch, because private windows and cleared
+site data both make it throw.
+
+There is no server-side session, no conversation list in the backend, and no
+sync. Say so in the README.
+
+### Streaming
+
+Requests go out with `"stream": true`. Frames are parsed off the
+`text/event-stream` body and appended into the open assistant bubble as they
+arrive; `data: [DONE]` closes it. The view follows the bottom while text grows,
+**unless the user has scrolled up** — then it stays put and shows a
+"jump to latest" affordance. Silently yanking the viewport away from something
+a person is reading is the single most irritating bug this UI can have.
+
+### Rendering
+
+A small hand-written markdown renderer: headings, bold, italics, inline code,
+fenced code blocks, ordered and unordered lists, links, and paragraphs. Fenced
+blocks are monospace with a copy button.
+
+**All model output is untrusted text.** Escape it before it reaches the DOM;
+build nodes with `textContent`, never by assigning a constructed HTML string.
+A model that emits `<img onerror=…>` must render as those characters. Links get
+`rel="noopener noreferrer"` and are not auto-followed. There is no HTML
+passthrough mode and no request for one will be honoured.
+
+### Errors
+
+Endpoint failures are rendered inline in the thread as a system note, never as
+an `alert()` and never as a silent no-op:
+
+| Status | Note shown |
+|---|---|
+| `401` | token rejected — the page reloads to pick up a fresh one |
+| `429` local queue | "busy, retrying" with the `Retry-After` delay honoured once |
+| `429` provider | "the provider is rate-limiting this account" |
+| `503` | "not logged in — run `webagent login --brain <id>`" |
+| `504` | "the turn timed out" with a retry button |
+
+### Token
+
+The page is served by the same process that holds the token, so the server
+injects it into the served HTML at request time. The user is never asked to
+paste a key into their own UI. The token never appears in a URL, only in the
+`Authorization` header of fetches.
+
+### Aesthetic
+
+Near-black background, one accent colour, system font stack, generous line
+height, comfortable reading measure (~46rem). Minimal chrome: no sidebar, no
+icon set, no avatars, no gradients, no animation beyond the caret and a fade on
+new messages. Dark by default and honouring `prefers-color-scheme: light`.
+Usable down to 380px wide — the composer and thread stack, nothing overflows
+horizontally.
+
+Design it yourself. There is no mockup; the reference point is an ordinary
+modern chat app, not a dashboard.
 
 ---
 
 ## Protocol `webagent/1`
 
-Every brain reply must contain exactly one envelope. The parser extracts it from
-surrounding prose (chats wrap things in markdown fences and commentary) and then
-validates it strictly.
+Used on the CLI/REPL path only. Every brain reply must contain exactly one
+envelope. The parser extracts it from surrounding prose (chats wrap things in
+markdown fences and commentary) and then validates it strictly.
 
 ### Envelope
 
@@ -300,7 +573,7 @@ WEBAGENT/1 WRITE <path>
 WEBAGENT/1 EDIT <path>
 <<<OLD
 old text
-=== 
+===
 new text
 >>>NEW
 ```
@@ -342,7 +615,8 @@ reason must be produced.
 ## Controller
 
 The controller runs plan → act → observe until the brain emits `finish`, a
-budget is exhausted, or a guard trips.
+budget is exhausted, or a guard trips. It is reachable from the CLI and the
+REPL and from nowhere else.
 
 ### Cycle
 
@@ -354,7 +628,7 @@ budget is exhausted, or a guard trips.
    cycle; a fourth failure aborts the run with `status=protocol_failure`.
 4. Execute actions in order, stopping at the first failure.
 5. Serialise results into one observation string.
-6. Append everything to the transcript and the event stream.
+6. Append everything to the transcript and the event log.
 
 ### Budgets and guards
 
@@ -394,9 +668,13 @@ status is terminal is an error.
 
 ## Security model
 
-The brain executes shell commands as the logged-in user. This is stated plainly
-in the README and in `doctor` output. The policy is a safety net, not a sandbox.
+On the CLI/REPL path the brain executes shell commands as the logged-in user.
+This is stated plainly in the README and in `doctor` output. The policy is a
+safety net, not a sandbox.
 
+- **The API path has no tools.** No shell, no filesystem, no controller. This is
+  structural, not a check — the `api` module must not be able to name the tool
+  layer at all.
 - **Denylist** (always on): recursive deletion of a root or home path, disk
   formatting, `dd` to a block device, fork bombs, piping a download into a
   shell, mass permission changes, shutdown/reboot, writing outside the
@@ -430,8 +708,10 @@ pub trait BrainBackend {
 Two implementations ship:
 
 - **`MockBrainBackend`** — constructed from a script of replies, optionally with
-  per-reply delays and injected failures. Used by every controller test. It is a
-  first-class part of the product, not test scaffolding, and it lives in `src/`.
+  per-reply delays and injected failures. Used by every controller test and by
+  every API test. It is a first-class part of the product, not test scaffolding,
+  and it lives in `src/`. `api serve --brain mock` must be a working
+  configuration so the endpoint can be exercised without a browser.
 - **`WebBrainBackend`** — drives the embedded WebView. Behind the `webview`
   feature. Its DOM interaction goes through a `PageDriver` trait so that the
   send/wait/read logic is itself unit-testable against a `MockPageDriver`.
@@ -496,7 +776,7 @@ data/
 ├── runs/<run_id>/
 │   ├── meta.json          run id, task, brain, workspace, status, counters
 │   ├── transcript.jsonl   one record per prompt/reply/action/observation
-│   └── events.jsonl       append-only UI event stream, monotonic seq
+│   └── events.jsonl       append-only event log, monotonic seq
 ├── memory.jsonl           long-term facts, appended, never rewritten
 ├── audit.jsonl            shell audit, written before execution
 └── capability/proofs.jsonl  capability measurements
@@ -507,9 +787,10 @@ Rules that are not negotiable:
 
 - JSON-Lines everywhere. A truncated final line from a killed process must be
   skipped on read, not crash the reader.
-- `events.jsonl` carries a monotonically increasing `seq`. The web UI polls
-  `events?since=<seq>`; this is the only streaming mechanism and it must survive
-  a page reload with no lost or duplicated events.
+- `events.jsonl` carries a monotonically increasing `seq` so a run can be
+  replayed after the fact by `webagent runs --json`.
+- API requests do **not** create run directories. They are stateless; at most
+  they append one line to a request log if enabled.
 - Run ids are sortable and collision-free without coordination:
   `YYYYMMDD-HHMMSS-<6 hex>`.
 - `profiles/` and `data/` are both gitignored. Committing a cookie jar is a
@@ -522,7 +803,10 @@ Rules that are not negotiable:
 ## Command surface
 
 ```
-webagent                                       # serves and opens the web UI
+webagent                                       # prints help and exits 0
+webagent api serve    [--bind 127.0.0.1] [--port 8788] [--brain <id>]
+                      [--api-key-env <VAR>] [--headless] [--timeout-secs <s>]
+                      [--max-queue <n>]
 webagent login        --brain <id> [--timeout <s>] [--force]
 webagent run          --task "<text>" [--brain <id>] [--workspace <path>]
                       [--max-cycles N] [--resume <run_id>] [--headless]
@@ -532,7 +816,6 @@ webagent repl         [--brain <id>]
 webagent diagnose     --brain <id>
 webagent doctor       [--json]
 webagent runs         [--json]
-webagent show/hide    --brain <id>
 ```
 
 - `ask` is the unified entry point: the default is an autonomous run,
@@ -548,41 +831,10 @@ webagent show/hide    --brain <id>
 
 ### Slash commands
 
-One parser, shared verbatim between REPL and web UI:
 `/new`, `/resume <id>`, `/status`, `/brain <id>`, `/chat <text>`, `/doctor`,
 `/help`, `/quit`. In the REPL, bare input is an **autonomous task**; `/chat` is
 the only way to talk without tools. That asymmetry is deliberate and must be
 stated in `/help`.
-
----
-
-## Web UI
-
-Single page, served from the binary, no build step, no npm, no framework, no
-CDN. Hand-written HTML/CSS/JS embedded in the binary at compile time.
-
-- **Left:** brain list with evidence rung per brain, session list.
-- **Centre:** event stream rendered live — text deltas, action start, action
-  result, observation, done. Long command output is collapsed by default.
-- **Right:** run meta, cycle counter, budgets remaining, workspace path.
-- **Doctor view:** the capability matrix, every cell labelled with its rung and
-  the date of the record behind it. A cell may never be green on a claim.
-
-The API is loopback-only, bound to `127.0.0.1`, and rejects requests carrying an
-`Origin` header it did not serve. No authentication beyond that in v1, and the
-README says so plainly.
-
-Endpoints: `GET /api/brains`, `POST /api/sessions`, `GET /api/sessions`,
-`POST /api/ask`, `GET /api/events?since=<seq>`, `GET /api/doctor`,
-`POST /api/window` (show/hide).
-
-### Aesthetic
-
-Terminal-adjacent, high-contrast, monospace throughout. Dark by default,
-respecting `prefers-color-scheme`. No rounded-corner dashboard look, no icon
-font, no animation beyond what makes streaming text legible. It should look like
-instrumentation, because that is what it is. Design it yourself — there is no
-mockup.
 
 ---
 
@@ -591,8 +843,7 @@ mockup.
 ```
 webagent/
 ├── SPEC.md
-├── README.md              installation and public operation
-├── AGENTS.md              the contract for agents working in this repo
+├── README.md              installation, the endpoint, the security boundary
 ├── Cargo.toml
 ├── rust-toolchain.toml
 ├── selectors/
@@ -600,15 +851,17 @@ webagent/
 │   └── chatgpt.json  claude.json  gemini.json  …
 ├── src/
 │   ├── main.rs  lib.rs  cli.rs
-│   ├── protocol/         types.rs  parser.rs  raw.rs
-│   ├── controller/       mod.rs  budget.rs  loop_guard.rs  context.rs
-│   ├── brain/            mod.rs  mock.rs  web.rs  page_driver.rs
-│   ├── tools/            executor.rs  shell_policy.rs  file_actions.rs
-│   ├── store/            run_store.rs  transcript.rs  events.rs  memory.rs
-│   ├── capability/       proof.rs  matrix.rs
-│   ├── surfaces/         repl.rs  web_ui.rs  web_api.rs
-│   └── assets/           index.html  app.js  style.css
-├── tests/                integration tests
+│   ├── api/             server.rs  openai.rs  anthropic.rs  sse.rs  queue.rs
+│   │   └── ui.rs        serves the embedded assets at /
+│   ├── assets/          index.html  app.js  style.css  (embedded at compile time)
+│   ├── protocol/        types.rs  parser.rs  raw.rs
+│   ├── controller/      mod.rs  budget.rs  loop_guard.rs  context.rs
+│   ├── brain/           mod.rs  mock.rs  web.rs  page_driver.rs
+│   ├── tools/           executor.rs  shell_policy.rs  file_actions.rs
+│   ├── store/           run_store.rs  transcript.rs  events.rs  memory.rs
+│   ├── capability/      proof.rs  matrix.rs
+│   └── repl.rs
+├── tests/               integration tests, including live loopback API tests
 └── .github/workflows/ci.yml
 ```
 
@@ -624,7 +877,7 @@ The build is complete when all of the following hold on a clean checkout.
 3. `cargo fmt --check` is clean.
 4. `cargo clippy --all-targets --no-default-features -- -D warnings` is clean,
    and again with default features.
-5. `cargo test --no-default-features` passes with **at least 120 tests**, of
+5. `cargo test --no-default-features` passes with **at least 140 tests**, of
    which:
    - every conformance vector in the protocol table is a named test;
    - at least one test drives a full multi-cycle run through
@@ -635,14 +888,39 @@ The build is complete when all of the following hold on a clean checkout.
      failure;
    - workspace escape is tested for absolute path, `..`, and symlink;
    - a truncated final line in each JSON-Lines file is tested as recoverable.
-6. No test requires a network socket, a browser, or a provider account.
-7. `webagent --help` exits 0 and lists every command in the surface above.
-8. `webagent doctor --json` emits exactly one JSON object on stdout with an
-   empty stderr-free contract, on a machine with no profiles present, and exits
-   0 while reporting every brain at rung 0.
-9. The README explains installation, the no-API-key model, and the security
-   boundary — including the sentence that this is not a sandbox.
-10. `.gitignore` excludes `data/` and `profiles/`, and a test asserts it.
+6. An integration test starts `api serve --brain mock` on an ephemeral loopback
+   port and, over a real TCP socket, proves all of:
+   - `GET /v1/models` lists the alias and every brain with a selector file;
+   - `POST /v1/chat/completions` returns the documented object shape, including
+     a present, all-zero `usage`;
+   - the same with `"stream": true` yields well-formed `chat.completion.chunk`
+     frames terminated by `data: [DONE]`;
+   - `POST /v1/messages` returns the Anthropic shape;
+   - a missing or wrong bearer token is `401`;
+   - a request carrying `Origin` is `403`;
+   - `"seed": 1` is `400` and the body names the parameter;
+   - an unknown `model` is `404`;
+   - two concurrent requests are serialised, not interleaved;
+   - `GET /healthz` answers without a token.
+7. A test proves the web UI is self-contained: `GET /` returns `200` with
+   `text/html`, the body contains no `http://` or `https://` URL pointing off
+   the loopback listener, and every asset it references resolves to an embedded
+   file. A second test feeds `<img src=x onerror=alert(1)>` through the
+   markdown renderer and asserts the output contains the escaped text and no
+   element node.
+8. Starting `api serve --bind 0.0.0.0` exits 2 without binding a socket, and a
+   test asserts it.
+9. No test requires an **outbound** network connection, a browser, or a provider
+   account. Loopback sockets are expected and permitted.
+10. `webagent --help` exits 0 and lists every command in the surface above.
+11. `webagent doctor --json` emits exactly one JSON object on stdout, on a
+    machine with no profiles present, and exits 0 while reporting every brain at
+    rung 0.
+12. The README explains installation, the no-API-key model, how to point an
+    existing harness at the endpoint, the fact that conversations live in the
+    browser and requests are stateless, that `usage` is always zero, and the
+    security boundary — including the sentence that this is not a sandbox.
+13. `.gitignore` excludes `data/` and `profiles/`, and a test asserts it.
 
 Anything the spec calls a capability but the tests cannot demonstrate must be
 listed in the README under a "not yet proven" heading rather than claimed.
@@ -656,9 +934,11 @@ listed in the README under a "not yet proven" heading rather than claimed.
   by function. Separate "add type" from "add parser" from "add tests".
 - Every ticket carries acceptance criteria as a checklist.
 - Tests belong to the ticket, never to a follow-up ticket.
-- Build the protocol parser first, the controller against the mock backend
-  second, and the WebView backend last. Anything that requires a real browser to
-  validate is the final layer, never a dependency of the layers below it.
+- Build order: protocol parser, then the mock backend, then the HTTP server
+  against the mock, then the messenger UI against that server, then the
+  controller, then the WebView backend last. Anything that requires a real
+  browser to validate is the final layer, never a dependency of the layers
+  below it.
 
 ---
 
@@ -671,6 +951,17 @@ listed in the README under a "not yet proven" heading rather than claimed.
 | Brains | Logged-in web chats via embedded WebView. No API keys. |
 | Brain contract | One trait, `send(&str) -> Result<String>` |
 | Provider integration | One JSON selector file. No provider-specific Rust. |
+| Primary surface | Local OpenAI-compatible endpoint |
+| Web UI | Messenger at `/`, a client of `/v1` with no privileged route |
+| Conversation state | Owned by the browser, re-sent each turn. No server session. |
+| UI assets | Hand-written, embedded at compile time. No framework, no CDN. |
+| Model output | Untrusted. Escaped before it reaches the DOM, always. |
+| API path | One browser turn per request. No controller, no tools, no state. |
+| Unsupported params | Rejected with 400, never silently ignored |
+| `usage` counts | Always zero and documented as such. Never estimated. |
+| Binding | Loopback only, refused at startup otherwise |
+| Auth | Bearer token always required, generated if unset |
+| HTTP | Hand-written HTTP/1.1 server. No framework, no client, no TLS. |
 | Protocol | `webagent/1`, hand-rolled strict parser, closed field sets |
 | Protocol failure | Repair prompt with the exact reason, max 3 attempts |
 | File edits | Native, never through the shell |
@@ -678,21 +969,17 @@ listed in the README under a "not yet proven" heading rather than claimed.
 | Workspace | Bound per run, escape fails closed |
 | Shell | Denylist always, allowlist under strict mode, audit before execution |
 | Persistence | JSON-Lines, resumable, truncation-tolerant |
-| Streaming | `events?since=<seq>` polling. No WebSocket. |
-| Web UI | Default surface, hand-written, embedded, no build step |
-| Testing | Full loop tested through a mock backend, no network |
-| HTTP client | None in the core |
-| Prose language | English throughout — code, docs, CLI, UI |
+| Testing | Full loop and full endpoint tested against a mock backend |
+| Prose language | English throughout — code, docs, CLI |
 | Licence | MIT |
 
 ---
 
 ## Decisions deferred
 
-- OpenAI-/Anthropic-compatible local inference bridge.
-- Multi-brain pools, swarm synthesis, cross-brain handoff.
-- Benchmark harness and the autoresearch improvement loop.
-- Terminal UI and window tiling.
 - macOS, Android, ARM.
+- Conversation continuity across API requests.
+- Real token accounting.
 - Wiki-style structured long-term memory.
 - Per-provider model switching and reasoning-effort control.
+- Tool-calling passthrough on the OpenAI adapter.

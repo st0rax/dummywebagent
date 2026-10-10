@@ -5,3 +5,4 @@
 # Status: AUTONOM — working continuously, no hidden processes
 # Blocker: Live-provider login (honest Not yet proven documented)
 # Next: Continue pure implementation or user says "Stopp"
+Meeting-Themen: Status-Check / Abschluss / Live-Login-Freigabe?

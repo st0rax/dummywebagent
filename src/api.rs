@@ -14,6 +14,9 @@ pub struct QueueConfig {
 
 impl Default for QueueConfig {
     fn default() -> Self {
-        Self { max_queue: 8, timeout_secs: 120 }
+        Self {
+            max_queue: 8,
+            timeout_secs: 120,
+        }
     }
 }

@@ -19,3 +19,4 @@ pub fn serve_api() {
 
 pub struct QueueConfig { pub max_queue: usize, pub timeout_secs: u32 }
 impl Default for QueueConfig { fn default() -> Self { Self { max_queue: 8, timeout_secs: 120 } } }
+// Automatischer Fortschritt — SPECHT: WebAgent Mock-Endpunkte vollständig (handle_completions + handle_stream) — kein Stop, nur Weiter
